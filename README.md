@@ -55,7 +55,7 @@ Requirements: [XAMPP](https://www.apachefriends.org/) (Apache, PHP 8+, MySQL/Mar
    git clone https://github.com/kenyakino/track-a-demic.git
    ```
 2. Open the XAMPP Control Panel and start **Apache** and **MySQL**.
-3. Create the configuration file: copy `config/config.example.php` to `config/config.php` and set your database name, user, and password.
+3. Create the configuration file: copy `config/config.example.php` to `config/config.php`. Set your database name, user, and password, and change `adviser_code` to your own secret (see [Authentication](#authentication)).
 4. Set up the database (see below).
 5. Open `http://localhost/track-a-demic/` in your browser.
 6. To confirm the database connection works, open `http://localhost/track-a-demic/api/health.php`. It should show `{"ok":true,"database":"connected"}`.
@@ -98,6 +98,35 @@ The sample data is for development and demos only. Do not import `seed.sql` on a
 | references_list | Saved references |
 | files | Uploaded drafts and documents |
 | notifications | In-system alerts |
+
+## Authentication
+
+- Passwords are hashed with PHP's `password_hash()` and checked with `password_verify()`. Plain-text passwords are never stored.
+- Sessions use an HttpOnly, SameSite cookie, and the session id is renewed at login.
+- Every POST request to the API must send a CSRF token (the pages add it automatically).
+- Repeated wrong passwords temporarily lock sign-in for that browser session.
+- Pages and API endpoints check the user's role on the server. A student cannot open adviser pages, and the other way around.
+
+**Roles:** anyone can register as a **Student**. To register as an **Adviser**, the person must enter the adviser code. Set it in `config/config.php`:
+
+```php
+'auth' => [
+    'adviser_code' => 'your-own-secret-code',
+],
+```
+
+Share the code only with advisers. The default placeholder code is rejected when `env` is set to `production`.
+
+| Page or endpoint | Purpose |
+|---|---|
+| `pages/login.php` | Sign in |
+| `pages/register.php` | Create an account |
+| `pages/student/dashboard.php` | Student dashboard (students only) |
+| `pages/adviser/dashboard.php` | Adviser dashboard (advisers only) |
+| `api/register.php` | Create an account |
+| `api/login.php` | Sign in |
+| `api/logout.php` | Sign out |
+| `api/me.php` | Current signed-in user |
 
 ## Deployment (InfinityFree)
 
