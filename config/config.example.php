@@ -19,6 +19,11 @@ return [
         'pass'    => '',                      // XAMPP default is empty
         'charset' => 'utf8mb4',
     ],
+    'auth' => [
+        // Advisers must enter this code when they register.
+        // Change it and share it only with advisers.
+        'adviser_code' => 'CHANGE-THIS-ADVISER-CODE',
+    ],
     'upload' => [
         'max_size'    => 5 * 1024 * 1024,     // 5 MB
         'allowed_ext' => ['pdf', 'docx'],
