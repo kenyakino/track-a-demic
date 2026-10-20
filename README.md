@@ -39,10 +39,10 @@ track-a-demic/
 ├── config/       Configuration template (config.php is not committed)
 ├── database/     schema.sql and seed.sql
 ├── docs/         Architecture diagram, ERD, and other documentation
-├── includes/     Shared PHP code (database connection, auth helpers)
+├── includes/     Shared PHP code (database, auth helpers, page layout)
 ├── pages/        Student and adviser pages
 ├── uploads/      Uploaded files (not committed)
-└── index.php     Entry page
+└── index.php     Landing page
 ```
 
 ## Running the Project Locally
@@ -127,6 +127,22 @@ Share the code only with advisers. The default placeholder code is rejected when
 | `api/login.php` | Sign in |
 | `api/logout.php` | Sign out |
 | `api/me.php` | Current signed-in user |
+
+## Design and Theme
+
+The interface is responsive and tested for these minimum sizes: desktop 1366x768, tablet 768x1024, and mobile 375x667.
+
+| Role | Color |
+|---|---|
+| Main (background) | `#E6E8E6` |
+| Text | `#000000` |
+| Cards and panels | `#F4F5F4` and `#D9DCD9` |
+| Secondary (links, progress, accents) | `#2F6B4A` forest green |
+| Secondary tint | `#CBDCD1` |
+
+A **dark mode** switch is in every page header. The choice is saved with `localStorage`, so it stays after a refresh. If nothing is saved yet, the page follows the device's light or dark setting. Colors are defined once as CSS variables at the top of `assets/css/style.css`.
+
+Shared page pieces (head, logo, theme button) live in `includes/layout.php`, so every page uses the same markup.
 
 ## Deployment (InfinityFree)
 
