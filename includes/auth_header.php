@@ -3,31 +3,20 @@
  * Opens the split layout used by the login and register pages.
  * Expects: $pageTitle (string) and $csrf (string).
  */
+require_once __DIR__ . '/layout.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="csrf-token" content="<?= e($csrf) ?>">
-  <meta name="color-scheme" content="light dark">
-  <title><?= e($pageTitle) ?> | Track-a-Demic</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(app_url('assets/css/style.css')) ?>">
+<?php layout_head($pageTitle, $csrf); ?>
 </head>
-<body class="auth-page" data-base-url="<?= e(rtrim((string) (app_config()['app']['base_url'] ?? ''), '/')) ?>">
+<body class="auth-page" <?php layout_body_data(); ?>>
 <div class="auth">
   <aside class="auth-aside">
-    <a class="brand" href="<?= e(app_url('')) ?>">
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-        <path d="M5 22h8a4 4 0 0 0 4-4V10a4 4 0 0 1 4-4h2" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-        <circle cx="5" cy="22" r="3" fill="#F2B705"/>
-        <circle cx="23" cy="6" r="3" fill="currentColor"/>
-      </svg>
-      Track-a-Demic
-    </a>
+    <div class="aside-top">
+      <?php layout_brand(app_url('')); ?>
+      <?php layout_theme_toggle(); ?>
+    </div>
     <div class="auth-pitch">
       <p class="pitch">From proposal to defense, on one track.</p>
       <ol class="route">

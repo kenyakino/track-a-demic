@@ -69,7 +69,7 @@ require __DIR__ . '/../includes/auth_header.php';
           <p class="field-error" id="confirm_password-error" data-error-for="confirm_password"></p>
         </div>
 
-        <button class="btn btn-primary" type="submit">Create account</button>
+        <button class="btn btn-primary btn-block" type="submit">Create account</button>
       </form>
 
       <p class="switch">Already have an account? <a href="login.php">Sign in</a></p>

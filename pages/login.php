@@ -43,7 +43,7 @@ require __DIR__ . '/../includes/auth_header.php';
           <p class="field-error" id="password-error" data-error-for="password"></p>
         </div>
 
-        <button class="btn btn-primary" type="submit">Sign in</button>
+        <button class="btn btn-primary btn-block" type="submit">Sign in</button>
       </form>
 
       <p class="switch">New to Track-a-Demic? <a href="register.php">Create an account</a></p>
