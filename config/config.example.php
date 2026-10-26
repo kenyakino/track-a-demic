@@ -11,6 +11,7 @@ return [
         'name'     => 'Track-a-Demic',
         'env'      => 'development',          // use 'production' when deployed
         'base_url' => '/track-a-demic',       // use '' if the site is in the web root
+        'timezone' => 'Asia/Manila',          // used for dates such as "overdue"
     ],
     'db' => [
         'host'    => 'localhost',             // InfinityFree gives you a host like sqlXXX.infinityfree.com

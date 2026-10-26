@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/auth.php';
 
+const MAX_CODE_ATTEMPTS = 5;
+const CODE_LOCK_SECONDS = 300;
+
 start_secure_session();
 require_post();
 verify_csrf();
@@ -44,10 +47,27 @@ if (!in_array($role, ['student', 'adviser'], true)) {
     $isDefault = $expected === 'CHANGE-THIS-ADVISER-CODE'
         && ($config['app']['env'] ?? 'production') === 'production';
 
+    // Slow down guessing of the adviser code
+    $codeFail = $_SESSION['code_fail'] ?? ['count' => 0, 'until' => 0];
+    if ($codeFail['until'] > time()) {
+        $minutes = (int) ceil(($codeFail['until'] - time()) / 60);
+        json_response([
+            'ok' => false,
+            'message' => "Too many wrong adviser codes. Try again in {$minutes} minute(s).",
+        ], 429);
+    }
+
     if ($expected === '' || $isDefault) {
         $errors['adviser_code'] = 'Adviser sign-up is not available right now.';
     } elseif (!hash_equals($expected, $code)) {
+        $codeFail['count']++;
+        if ($codeFail['count'] >= MAX_CODE_ATTEMPTS) {
+            $codeFail = ['count' => 0, 'until' => time() + CODE_LOCK_SECONDS];
+        }
+        $_SESSION['code_fail'] = $codeFail;
         $errors['adviser_code'] = 'That adviser code is not valid.';
+    } else {
+        unset($_SESSION['code_fail']);
     }
 }
 
