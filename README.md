@@ -38,7 +38,7 @@ track-a-demic/
 ├── assets/       CSS, JavaScript, and images
 ├── config/       Configuration template (config.php is not committed)
 ├── database/     schema.sql and seed.sql
-├── docs/         Architecture diagram, ERD, and other documentation
+├── docs/         Diagrams (architecture, ERD, use case, flowcharts)
 ├── includes/     Shared PHP code (database, auth helpers, page layout)
 ├── pages/        Student and adviser pages
 ├── uploads/      Uploaded files (not committed)
@@ -115,7 +115,7 @@ The sample data is for development and demos only. Do not import `seed.sql` on a
 ],
 ```
 
-Share the code only with advisers. The default placeholder code is rejected when `env` is set to `production`.
+Share the code only with advisers. The default placeholder code is rejected when `env` is set to `production`. After 5 wrong codes, adviser sign-up is locked for 5 minutes for that browser session.
 
 | Page or endpoint | Purpose |
 |---|---|
@@ -127,6 +127,43 @@ Share the code only with advisers. The default placeholder code is rejected when
 | `api/login.php` | Sign in |
 | `api/logout.php` | Sign out |
 | `api/me.php` | Current signed-in user |
+| `api/student-overview.php` | Student's group, topic, and milestones (GET) |
+| `api/topic-create.php` | Propose a topic (POST) |
+| `api/topic-update.php` | Edit a topic and send it back for review (POST) |
+| `api/topic-delete.php` | Delete a topic (POST, group leader only) |
+| `api/adviser-overview.php` | Adviser's totals, attention list, and groups (GET) |
+| `api/adviser-groups.php` | Adviser's groups with members, plus students without a group (GET) |
+| `api/adviser-topics.php` | Topics of the adviser's groups with comments (GET) |
+| `api/group-create.php` | Create a group, optionally with students (POST) |
+| `api/group-update.php` | Rename a group (POST) |
+| `api/group-delete.php` | Delete a group that has no work yet (POST) |
+| `api/group-member-add.php` | Add a student to a group (POST) |
+| `api/group-member-remove.php` | Remove a student from a group (POST) |
+| `api/group-leader-set.php` | Choose the group leader (POST) |
+| `api/topic-review.php` | Approve, request revision, reject, start, or defend a topic (POST) |
+| `api/topic-comment-add.php` | Comment on a topic (POST) |
+
+## Student Dashboard
+
+After signing in, a student sees their group, research topic, and milestones. The page loads its data with the Fetch API and renders it in the browser.
+
+- A student sees only their own group. The server checks this on every request, so a student cannot read or change another group's topic.
+- **Create:** any group member can propose a topic. A group has one active topic at a time.
+- **Read:** the topic card shows the status (Proposed, Approved, In Progress, For Revision, Defended), the adviser's remarks, and past rejected topics.
+- **Update:** a topic can be edited while it is Proposed or For Revision. Saving sends it back to the adviser for review.
+- **Delete:** only the group leader can delete a topic, and only while it is Proposed or For Revision.
+- The adviser gets an in-system notification whenever a topic is submitted, changed, or withdrawn.
+- Forms use a dialog, live character counters, inline validation messages, and toast messages.
+
+## Adviser Dashboard
+
+Advisers have three pages, reached from the navigation bar:
+
+- **Overview:** totals (groups, students, topics to review, overdue milestones), a list of things that need attention, and a table of groups with their topic status and milestone progress.
+- **Groups:** create groups, rename them, add or remove students, choose the group leader, and delete groups that have no work yet. Only students who are not in a group yet can be added.
+- **Topic reviews:** filter topics by status, then approve, ask for changes, or reject a proposal. Approved topics can be moved to In Progress and Defended. Rejecting or asking for changes requires remarks. Advisers can also comment on a topic, and the group sees the comments on their dashboard.
+
+An adviser can only see and change their own groups. The server checks ownership on every request. Students get an in-system notification for each decision, comment, or change to their group.
 
 ## Design and Theme
 
@@ -140,9 +177,45 @@ The interface is responsive and tested for these minimum sizes: desktop 1366x768
 | Secondary (links, progress, accents) | `#2F6B4A` forest green |
 | Secondary tint | `#CBDCD1` |
 
-A **dark mode** switch is in every page header. The choice is saved with `localStorage`, so it stays after a refresh. If nothing is saved yet, the page follows the device's light or dark setting. Colors are defined once as CSS variables at the top of `assets/css/style.css`.
+Signed-in pages have a navigation bar under the top bar. It lists the pages for the user's role, marks the current page, and scrolls sideways on narrow screens. A **dark mode** switch is in every page header. The choice is saved with `localStorage`, so it stays after a refresh. If nothing is saved yet, the page follows the device's light or dark setting. Colors are defined once as CSS variables at the top of `assets/css/style.css`.
 
 Shared page pieces (head, logo, theme button) live in `includes/layout.php`, so every page uses the same markup.
+
+## Documentation
+
+System diagrams are in `docs/diagrams/`. Each has a PNG (for documents and slides) and an SVG (editable). The `source/` folder holds the files used to generate them.
+
+### System architecture
+
+![System architecture](docs/diagrams/architecture.png)
+
+### Entity relationship diagram
+
+![Entity relationship diagram](docs/diagrams/erd.png)
+
+### Use case diagram
+
+![Use case diagram](docs/diagrams/use-case.png)
+
+### Flowcharts
+
+Registration, login, and access control:
+
+![Authentication flowchart](docs/diagrams/flowchart-authentication.png)
+
+Capstone workflow, from topic proposal to defense:
+
+![Capstone workflow flowchart](docs/diagrams/flowchart-capstone-workflow.png)
+
+To regenerate the diagrams, install [Graphviz](https://graphviz.org/download/) and Python 3, then run from `docs/diagrams/source`:
+
+```
+neato -Tpng -Gdpi=150 erd.dot -o ../erd.png
+dot -Tpng -Gdpi=150 architecture.dot -o ../architecture.png
+dot -Tpng -Gdpi=150 flowchart_authentication.dot -o ../flowchart-authentication.png
+dot -Tpng -Gdpi=150 flowchart_capstone_workflow.dot -o ../flowchart-capstone-workflow.png
+python3 use_case.py
+```
 
 ## Deployment (InfinityFree)
 
