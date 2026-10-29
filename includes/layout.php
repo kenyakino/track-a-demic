@@ -75,3 +75,48 @@ function layout_theme_toggle(): void
 </button>
     <?php
 }
+
+/**
+ * Links shown in the navigation bar of signed-in pages, by role.
+ * Each entry is key => [label, path]. New pages are added here.
+ */
+function nav_items_for(string $role): array
+{
+    if ($role === 'adviser') {
+        return [
+            'overview' => ['Overview', 'pages/adviser/dashboard.php'],
+            'groups'   => ['Groups', 'pages/adviser/groups.php'],
+            'topics'   => ['Topic reviews', 'pages/adviser/topics.php'],
+        ];
+    }
+
+    return [
+        'dashboard' => ['Dashboard', 'pages/student/dashboard.php'],
+    ];
+}
+
+/**
+ * Prints the top bar (logo, user, theme, sign out) and the navigation bar
+ * for signed-in pages. $active is the key of the current page.
+ */
+function layout_app_topbar(array $user, string $active): void
+{
+    ?>
+  <header class="topbar">
+    <?php layout_brand(app_url(dashboard_path($user['role']))); ?>
+    <div class="topbar-user">
+      <span class="topbar-name"><?= e($user['full_name']) ?></span>
+      <span class="role-tag"><?= e(ucfirst($user['role'])) ?></span>
+      <?php layout_theme_toggle(); ?>
+      <button type="button" class="btn btn-quiet btn-sm" data-logout>Sign out</button>
+    </div>
+  </header>
+  <nav class="app-nav" aria-label="Main">
+    <ul class="container app-nav-list">
+      <?php foreach (nav_items_for($user['role']) as $key => [$label, $path]): ?>
+        <li><a href="<?= e(app_url($path)) ?>"<?= $key === $active ? ' aria-current="page"' : '' ?>><?= e($label) ?></a></li>
+      <?php endforeach; ?>
+    </ul>
+  </nav>
+    <?php
+}
