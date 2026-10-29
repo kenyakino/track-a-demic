@@ -253,28 +253,34 @@ function notify_group_members(int $groupId, string $message, ?int $exceptUserId 
     }
 }
 
-/** Comments on topics, grouped by topic id. */
-function topic_comments_map(array $topicIds): array
+/** Comments on one kind of record (topic, milestone, file), grouped by record id. */
+function target_comments_map(string $type, array $ids): array
 {
-    if ($topicIds === []) {
+    if ($ids === []) {
         return [];
     }
 
-    $marks = implode(',', array_fill(0, count($topicIds), '?'));
+    $marks = implode(',', array_fill(0, count($ids), '?'));
     $stmt = db()->prepare(
         "SELECT c.id, c.target_id, c.comment_text, c.created_at, u.full_name, u.role
            FROM comments c
            JOIN users u ON u.id = c.user_id
-          WHERE c.target_type = 'topic' AND c.target_id IN ($marks)
+          WHERE c.target_type = ? AND c.target_id IN ($marks)
           ORDER BY c.id"
     );
-    $stmt->execute(array_values($topicIds));
+    $stmt->execute(array_merge([$type], array_values($ids)));
 
     $map = [];
     foreach ($stmt->fetchAll() as $row) {
         $map[(int) $row['target_id']][] = comment_view($row);
     }
     return $map;
+}
+
+/** Comments on topics, grouped by topic id. */
+function topic_comments_map(array $topicIds): array
+{
+    return target_comments_map('topic', $topicIds);
 }
 
 function comment_view(array $row): array
@@ -318,5 +324,155 @@ function adviser_topic_view(array $row, array $comments): array
         'updated_at'      => $row['updated_at'],
         'actions'         => array_keys(TOPIC_TRANSITIONS[$row['status']] ?? []),
         'comments'        => $comments,
+    ];
+}
+
+/* ------------------------------------------------------------
+ * Milestones
+ * ---------------------------------------------------------- */
+
+const MILESTONE_NAME_MIN = 2;
+const MILESTONE_NAME_MAX = 150;
+const MILESTONE_TERM_MAX = 50;
+const NOTE_MAX = 1000;
+
+/** What a group can do with a milestone, by its current status. */
+const MILESTONE_STUDENT_TRANSITIONS = [
+    'Not Started'  => ['start' => 'In Progress'],
+    'In Progress'  => ['submit' => 'Submitted'],
+    'Needs Rework' => ['submit' => 'Submitted'],
+    'Submitted'    => ['withdraw' => 'In Progress'],
+];
+
+/** What the adviser can do with a milestone, by its current status. */
+const MILESTONE_ADVISER_TRANSITIONS = [
+    'Submitted' => ['complete' => 'Completed', 'rework' => 'Needs Rework'],
+    'Completed' => ['reopen' => 'In Progress'],
+];
+
+/** True for a real calendar date written as YYYY-MM-DD. */
+function is_valid_date(string $value): bool
+{
+    $date = DateTime::createFromFormat('Y-m-d', $value);
+    return $date !== false && $date->format('Y-m-d') === $value;
+}
+
+/** Checks a milestone form. Returns [name, due_date, term, errors]. */
+function validate_milestone_input(array $input): array
+{
+    $name = trim(preg_replace('/\s+/u', ' ', (string) ($input['name'] ?? '')) ?? '');
+    $due  = trim((string) ($input['due_date'] ?? ''));
+    $term = trim((string) ($input['term'] ?? ''));
+
+    $errors = [];
+
+    $nameLength = text_length($name);
+    if ($nameLength < MILESTONE_NAME_MIN || $nameLength > MILESTONE_NAME_MAX) {
+        $errors['name'] = 'Use ' . MILESTONE_NAME_MIN . ' to ' . MILESTONE_NAME_MAX . ' characters for the name.';
+    }
+
+    if (!is_valid_date($due)) {
+        $errors['due_date'] = 'Choose a valid due date.';
+    }
+
+    if (text_length($term) > MILESTONE_TERM_MAX) {
+        $errors['term'] = 'Use ' . MILESTONE_TERM_MAX . ' characters or fewer for the term.';
+    }
+
+    return [$name, $due, $term, $errors];
+}
+
+/** Ids of the adviser's groups. */
+function adviser_group_ids(int $adviserId): array
+{
+    $stmt = db()->prepare('SELECT id FROM capstone_groups WHERE adviser_id = ?');
+    $stmt->execute([$adviserId]);
+    return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+}
+
+/** The milestone, only if it belongs to this adviser. */
+function find_adviser_milestone(int $milestoneId, int $adviserId): ?array
+{
+    $stmt = db()->prepare('SELECT id, adviser_id, name, due_date, term FROM milestone_templates WHERE id = ? AND adviser_id = ? LIMIT 1');
+    $stmt->execute([$milestoneId, $adviserId]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+/** Gives a new group the adviser's upcoming milestones. */
+function attach_upcoming_milestones(int $groupId, int $adviserId): void
+{
+    $stmt = db()->prepare('SELECT id FROM milestone_templates WHERE adviser_id = ? AND due_date >= ?');
+    $stmt->execute([$adviserId, date('Y-m-d')]);
+
+    $insert = db()->prepare('INSERT INTO group_milestones (group_id, template_id) VALUES (?, ?)');
+    foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $templateId) {
+        $insert->execute([$groupId, (int) $templateId]);
+    }
+}
+
+/** Shapes one group's progress on a milestone for the API. */
+function milestone_state_view(array $row, array $transitions, array $comments): array
+{
+    return [
+        'id'           => (int) $row['id'],
+        'name'         => $row['name'],
+        'due_date'     => $row['due_date'],
+        'term'         => $row['term'],
+        'status'       => $row['status'],
+        'completed_at' => $row['completed_at'],
+        'is_overdue'   => $row['status'] !== 'Completed' && $row['due_date'] < date('Y-m-d'),
+        'actions'      => array_keys($transitions[$row['status']] ?? []),
+        'comments'     => $comments,
+    ];
+}
+
+/* ------------------------------------------------------------
+ * Meetings
+ * ---------------------------------------------------------- */
+
+const MEETING_NOTES_MIN   = 10;
+const MEETING_NOTES_MAX   = 2000;
+const MEETING_ACTIONS_MAX = 1000;
+
+/** Checks a meeting form. Returns [date, notes, action_items, errors]. */
+function validate_meeting_input(array $input): array
+{
+    $date    = trim((string) ($input['meeting_date'] ?? ''));
+    $notes   = trim((string) ($input['notes'] ?? ''));
+    $actions = trim((string) ($input['action_items'] ?? ''));
+
+    $errors = [];
+
+    if (!is_valid_date($date)) {
+        $errors['meeting_date'] = 'Choose a valid date.';
+    } elseif ($date > date('Y-m-d')) {
+        $errors['meeting_date'] = 'The meeting date cannot be in the future.';
+    }
+
+    $notesLength = text_length($notes);
+    if ($notesLength < MEETING_NOTES_MIN || $notesLength > MEETING_NOTES_MAX) {
+        $errors['notes'] = 'Use ' . MEETING_NOTES_MIN . ' to ' . MEETING_NOTES_MAX . ' characters for the notes.';
+    }
+
+    if (text_length($actions) > MEETING_ACTIONS_MAX) {
+        $errors['action_items'] = 'Use ' . MEETING_ACTIONS_MAX . ' characters or fewer.';
+    }
+
+    return [$date, $notes, $actions, $errors];
+}
+
+function meeting_view(array $row): array
+{
+    $confirmed = (bool) $row['confirmed_by_adviser'];
+
+    return [
+        'id'           => (int) $row['id'],
+        'meeting_date' => $row['meeting_date'],
+        'notes'        => $row['notes'],
+        'action_items' => $row['action_items'],
+        'confirmed'    => $confirmed,
+        'can_edit'     => !$confirmed,
+        'created_at'   => $row['created_at'],
     ];
 }

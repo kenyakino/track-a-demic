@@ -46,6 +46,9 @@ try {
         $member->execute([$groupId, $userId, $index === 0 ? 1 : 0]);
     }
 
+    // The new group starts with the adviser's upcoming milestones
+    attach_upcoming_milestones($groupId, $adviser['id']);
+
     db()->commit();
 } catch (PDOException $e) {
     if (db()->inTransaction()) {
