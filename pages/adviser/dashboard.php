@@ -13,7 +13,7 @@ $csrf = csrf_token();
 <?php layout_head('Adviser overview', $csrf); ?>
 </head>
 <body <?php layout_body_data(); ?>>
-  <?php layout_app_topbar($user, 'overview'); ?>
+  <?php layout_app_open($user, 'overview'); ?>
 
   <main class="shell-main">
     <h1>Welcome, <?= e($user['full_name']) ?></h1>
@@ -27,6 +27,7 @@ $csrf = csrf_token();
       <noscript><p class="alert alert-error">JavaScript is required to use this page.</p></noscript>
     </div>
   </main>
+  <?php layout_app_close(); ?>
 
   <div class="toasts" data-toasts role="status" aria-live="polite"></div>
 

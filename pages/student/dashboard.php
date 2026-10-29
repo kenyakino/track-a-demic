@@ -13,7 +13,7 @@ $csrf = csrf_token();
 <?php layout_head('Student dashboard', $csrf); ?>
 </head>
 <body <?php layout_body_data(); ?>>
-  <?php layout_app_topbar($user, 'dashboard'); ?>
+  <?php layout_app_open($user, 'dashboard'); ?>
 
   <main class="shell-main">
     <h1>Welcome, <?= e($user['full_name']) ?></h1>
@@ -30,6 +30,7 @@ $csrf = csrf_token();
       <noscript><p class="alert alert-error">JavaScript is required to use the dashboard.</p></noscript>
     </div>
   </main>
+  <?php layout_app_close(); ?>
 
   <!-- Propose / edit topic -->
   <dialog id="topic-dialog" class="dialog" aria-labelledby="topic-dialog-title">

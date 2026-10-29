@@ -13,7 +13,7 @@ $csrf = csrf_token();
 <?php layout_head('Groups', $csrf); ?>
 </head>
 <body <?php layout_body_data(); ?>>
-  <?php layout_app_topbar($user, 'groups'); ?>
+  <?php layout_app_open($user, 'groups'); ?>
 
   <main class="shell-main">
     <div class="page-head">
@@ -32,6 +32,7 @@ $csrf = csrf_token();
       <noscript><p class="alert alert-error">JavaScript is required to use this page.</p></noscript>
     </div>
   </main>
+  <?php layout_app_close(); ?>
 
   <!-- Create group -->
   <dialog id="create-dialog" class="dialog" aria-labelledby="create-title">

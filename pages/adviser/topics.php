@@ -13,7 +13,7 @@ $csrf = csrf_token();
 <?php layout_head('Topic reviews', $csrf); ?>
 </head>
 <body <?php layout_body_data(); ?>>
-  <?php layout_app_topbar($user, 'topics'); ?>
+  <?php layout_app_open($user, 'topics'); ?>
 
   <main class="shell-main">
     <h1>Topic reviews</h1>
@@ -29,6 +29,7 @@ $csrf = csrf_token();
       <noscript><p class="alert alert-error">JavaScript is required to use this page.</p></noscript>
     </div>
   </main>
+  <?php layout_app_close(); ?>
 
   <dialog id="review-dialog" class="dialog dialog-wide" aria-labelledby="review-title">
     <div class="dialog-body" id="review-body"></div>
