@@ -142,6 +142,18 @@ Share the code only with advisers. The default placeholder code is rejected when
 | `api/group-leader-set.php` | Choose the group leader (POST) |
 | `api/topic-review.php` | Approve, request revision, reject, start, or defend a topic (POST) |
 | `api/topic-comment-add.php` | Comment on a topic (POST) |
+| `api/student-milestones.php` | Student's milestones, progress, and adviser notes (GET) |
+| `api/milestone-progress.php` | Start, submit, or withdraw a milestone (POST) |
+| `api/adviser-milestones.php` | Adviser's milestones with each group's progress (GET) |
+| `api/milestone-create.php` | Add a milestone and assign it to groups (POST) |
+| `api/milestone-update.php` | Edit a milestone and its groups (POST) |
+| `api/milestone-delete.php` | Delete a milestone nobody has started (POST) |
+| `api/milestone-review.php` | Mark complete, send back for rework, or reopen (POST) |
+| `api/student-meetings.php` | Student's group meeting logs (GET) |
+| `api/meeting-save.php` | Log or edit a meeting (POST) |
+| `api/meeting-delete.php` | Delete an unconfirmed meeting (POST) |
+| `api/adviser-meetings.php` | Meeting logs of the adviser's groups (GET) |
+| `api/meeting-confirm.php` | Confirm a meeting log, or reopen it (POST) |
 
 ## Student Dashboard
 
@@ -165,6 +177,20 @@ Advisers have three pages, reached from the navigation bar:
 
 An adviser can only see and change their own groups. The server checks ownership on every request. Students get an in-system notification for each decision, comment, or change to their group.
 
+## Milestones and Meetings
+
+**Milestones**
+
+- Advisers add milestones with a name, deadline, and optional term, and choose which groups get them. New groups automatically get the adviser's upcoming milestones.
+- A group works through each milestone: Not Started, In Progress, Submitted, then Completed. The adviser reviews submitted work and either completes it or sends it back as Needs Rework with a note. Completed milestones can be reopened.
+- Milestones that a group has already started cannot be removed from that group or deleted, so progress is never lost by accident.
+- Overdue milestones are flagged for both roles, and a progress bar shows how much a group has completed.
+
+**Meetings**
+
+- Students log adviser meetings with the date, notes, and action items. The date cannot be in the future.
+- The adviser confirms a meeting. A confirmed meeting is locked for the students, and the adviser can reopen it if it needs a fix.
+
 ## Design and Theme
 
 The interface is responsive and tested for these minimum sizes: desktop 1366x768, tablet 768x1024, and mobile 375x667.
@@ -177,7 +203,7 @@ The interface is responsive and tested for these minimum sizes: desktop 1366x768
 | Secondary (links, progress, accents) | `#2F6B4A` forest green |
 | Secondary tint | `#CBDCD1` |
 
-Signed-in pages have a navigation bar under the top bar. It lists the pages for the user's role, marks the current page, and scrolls sideways on narrow screens. A **dark mode** switch is in every page header. The choice is saved with `localStorage`, so it stays after a refresh. If nothing is saved yet, the page follows the device's light or dark setting. Colors are defined once as CSS variables at the top of `assets/css/style.css`.
+Signed-in pages use a side navigation. On desktop it stays on the left with the user's name, theme switch, and Sign out. On tablets and phones it becomes a menu that slides in from the left. It lists the pages for the user's role and marks the current page. A **dark mode** switch is in every page header. The choice is saved with `localStorage`, so it stays after a refresh. If nothing is saved yet, the page follows the device's light or dark setting. Colors are defined once as CSS variables at the top of `assets/css/style.css`.
 
 Shared page pieces (head, logo, theme button) live in `includes/layout.php`, so every page uses the same markup.
 

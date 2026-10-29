@@ -3,7 +3,7 @@
  * and handles creating, editing, and deleting the group's topic.
  */
 
-import { getJson, postJson, goToLogin } from './api.js';
+import { getJson, postJson, goToLogin, baseUrl } from './api.js';
 import { html, mount, formatDate, toast } from './ui.js';
 import { TOPIC_STATUS, badge } from './labels.js';
 
@@ -125,7 +125,10 @@ const groupCard = ({ group }) =>
 
 const milestoneCard = ({ milestones }) =>
   html`<article class="card">
-    <div class="card-head"><h2>Milestones</h2></div>
+    <div class="card-head">
+      <h2>Milestones</h2>
+      <a class="btn btn-quiet btn-sm" href="${baseUrl}/pages/student/milestones.php">Update progress</a>
+    </div>
     ${milestones.length
       ? html`<ol class="track">
           ${milestones.map((item) => {

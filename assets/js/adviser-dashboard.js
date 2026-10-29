@@ -12,6 +12,8 @@ const pageUrl = (file) => `${baseUrl}/pages/adviser/${file}`;
 const ATTENTION_LINKS = {
   review: { file: 'topics.php', label: 'Review topic' },
   members: { file: 'groups.php', label: 'Add students' },
+  'milestone-review': { file: 'milestones.php', label: 'Review milestone' },
+  'meeting-confirm': { file: 'meetings.php', label: 'Confirm meeting' },
 };
 
 const statsBlock = ({ stats }) => html`<dl class="stats">

@@ -19,7 +19,9 @@ $stmt = db()->prepare(
             (SELECT COUNT(*) FROM group_milestones m WHERE m.group_id = g.id AND m.status = 'Completed') AS ms_done,
             (SELECT COUNT(*) FROM group_milestones m
                JOIN milestone_templates t ON t.id = m.template_id
-              WHERE m.group_id = g.id AND m.status <> 'Completed' AND t.due_date < ?) AS ms_overdue
+              WHERE m.group_id = g.id AND m.status <> 'Completed' AND t.due_date < ?) AS ms_overdue,
+            (SELECT COUNT(*) FROM group_milestones m WHERE m.group_id = g.id AND m.status = 'Submitted') AS ms_submitted,
+            (SELECT COUNT(*) FROM meetings mt WHERE mt.group_id = g.id AND mt.confirmed_by_adviser = 0) AS meetings_pending
        FROM capstone_groups g
       WHERE g.adviser_id = ?
       ORDER BY g.group_name"
@@ -41,6 +43,8 @@ foreach ($stmt->fetchAll() as $row) {
         'ms_done'      => (int) $row['ms_done'],
         'ms_overdue'   => (int) $row['ms_overdue'],
     ];
+    $msSubmitted = (int) $row['ms_submitted'];
+    $meetingsPending = (int) $row['meetings_pending'];
     $groups[] = $group;
 
     $stats['groups']++;
@@ -55,6 +59,12 @@ foreach ($stmt->fetchAll() as $row) {
         $attention[] = ['group' => $group['name'], 'type' => 'members', 'message' => 'No students have been added yet.'];
     } elseif ($group['topic_status'] === null) {
         $attention[] = ['group' => $group['name'], 'type' => 'no-topic', 'message' => 'No topic has been proposed yet.'];
+    }
+    if ($msSubmitted > 0) {
+        $attention[] = ['group' => $group['name'], 'type' => 'milestone-review', 'message' => $msSubmitted . ($msSubmitted === 1 ? ' milestone is' : ' milestones are') . ' waiting for your review.'];
+    }
+    if ($meetingsPending > 0) {
+        $attention[] = ['group' => $group['name'], 'type' => 'meeting-confirm', 'message' => $meetingsPending . ($meetingsPending === 1 ? ' meeting log needs' : ' meeting logs need') . ' your confirmation.'];
     }
     if ($group['ms_overdue'] > 0) {
         $count = $group['ms_overdue'];
