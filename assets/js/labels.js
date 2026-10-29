@@ -16,3 +16,15 @@ export const TOPIC_STATUS = {
 /** A status pill. The words are always shown, color is only extra. */
 export const badge = (status) =>
   html`<span class="badge badge-${TOPIC_STATUS[status]?.cls ?? 'proposed'}">${status}</span>`;
+
+/** Milestone progress labels. Same idea as topics: the words are always shown. */
+export const MILESTONE_BADGES = {
+  'Not Started': 'proposed',
+  'In Progress': 'progress',
+  Submitted: 'submitted',
+  Completed: 'approved',
+  'Needs Rework': 'revision',
+};
+
+export const milestoneBadge = (status) =>
+  html`<span class="badge badge-${MILESTONE_BADGES[status] ?? 'proposed'}">${status}</span>`;
