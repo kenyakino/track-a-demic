@@ -181,30 +181,6 @@ Signed-in pages have a navigation bar under the top bar. It lists the pages for 
 
 Shared page pieces (head, logo, theme button) live in `includes/layout.php`, so every page uses the same markup.
 
-### System architecture
-
-![System architecture](docs/diagrams/architecture.png)
-
-### Entity relationship diagram
-
-![Entity relationship diagram](docs/diagrams/erd.png)
-
-### Use case diagram
-
-![Use case diagram](docs/diagrams/use-case.png)
-
-### Flowcharts
-
-Registration, login, and access control:
-
-![Authentication flowchart](docs/diagrams/flowchart-authentication.png)
-
-Capstone workflow, from topic proposal to defense:
-
-![Capstone workflow flowchart](docs/diagrams/flowchart-capstone-workflow.png)
-
-To regenerate the diagrams, install [Graphviz](https://graphviz.org/download/) and Python 3, then run from `docs/diagrams/source`:
-
 ```
 neato -Tpng -Gdpi=150 erd.dot -o ../erd.png
 dot -Tpng -Gdpi=150 architecture.dot -o ../architecture.png
