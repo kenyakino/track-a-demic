@@ -10,25 +10,28 @@ $csrf = csrf_token();
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<?php layout_head('Dashboard', $csrf); ?>
+<?php layout_head('Adviser overview', $csrf); ?>
 </head>
 <body <?php layout_body_data(); ?>>
-  <header class="topbar">
-    <?php layout_brand(app_url(dashboard_path($user['role']))); ?>
-    <div class="topbar-user">
-      <span class="topbar-name"><?= e($user['full_name']) ?></span>
-      <span class="role-tag"><?= e(ucfirst($user['role'])) ?></span>
-      <?php layout_theme_toggle(); ?>
-      <button type="button" class="btn btn-quiet btn-sm" data-logout>Sign out</button>
-    </div>
-  </header>
+  <?php layout_app_topbar($user, 'overview'); ?>
 
   <main class="shell-main">
     <h1>Welcome, <?= e($user['full_name']) ?></h1>
-    <p class="lead">Your groups, topic reviews, and milestones will appear here.</p>
+    <p class="lead">Your groups, topics, and deadlines at a glance.</p>
+
+    <div id="app" aria-live="polite" aria-busy="true">
+      <div class="skeleton-stack" aria-hidden="true">
+        <div class="card"><div class="skeleton skeleton-title"></div><div class="skeleton"></div><div class="skeleton skeleton-short"></div></div>
+        <div class="card"><div class="skeleton skeleton-title"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+      </div>
+      <noscript><p class="alert alert-error">JavaScript is required to use this page.</p></noscript>
+    </div>
   </main>
+
+  <div class="toasts" data-toasts role="status" aria-live="polite"></div>
 
   <script type="module" src="<?= e(app_url('assets/js/theme.js')) ?>"></script>
   <script type="module" src="<?= e(app_url('assets/js/app.js')) ?>"></script>
+  <script type="module" src="<?= e(app_url('assets/js/adviser-dashboard.js')) ?>"></script>
 </body>
 </html>
