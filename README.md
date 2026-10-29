@@ -181,10 +181,6 @@ Signed-in pages have a navigation bar under the top bar. It lists the pages for 
 
 Shared page pieces (head, logo, theme button) live in `includes/layout.php`, so every page uses the same markup.
 
-## Documentation
-
-System diagrams are in `docs/diagrams/`. Each has a PNG (for documents and slides) and an SVG (editable). The `source/` folder holds the files used to generate them.
-
 ### System architecture
 
 ![System architecture](docs/diagrams/architecture.png)
