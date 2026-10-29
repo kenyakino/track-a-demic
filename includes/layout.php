@@ -77,46 +77,92 @@ function layout_theme_toggle(): void
 }
 
 /**
- * Links shown in the navigation bar of signed-in pages, by role.
- * Each entry is key => [label, path]. New pages are added here.
+ * Links shown in the side navigation of signed-in pages, by role.
+ * Each entry is key => [label, path, icon]. New pages are added here.
  */
 function nav_items_for(string $role): array
 {
     if ($role === 'adviser') {
         return [
-            'overview' => ['Overview', 'pages/adviser/dashboard.php'],
-            'groups'   => ['Groups', 'pages/adviser/groups.php'],
-            'topics'   => ['Topic reviews', 'pages/adviser/topics.php'],
+            'overview'   => ['Overview', 'pages/adviser/dashboard.php', 'grid'],
+            'groups'     => ['Groups', 'pages/adviser/groups.php', 'users'],
+            'topics'     => ['Topic reviews', 'pages/adviser/topics.php', 'file'],
+            'milestones' => ['Milestones', 'pages/adviser/milestones.php', 'flag'],
+            'meetings'   => ['Meetings', 'pages/adviser/meetings.php', 'calendar'],
         ];
     }
 
     return [
-        'dashboard' => ['Dashboard', 'pages/student/dashboard.php'],
+        'dashboard'  => ['Dashboard', 'pages/student/dashboard.php', 'grid'],
+        'milestones' => ['Milestones', 'pages/student/milestones.php', 'flag'],
+        'meetings'   => ['Meetings', 'pages/student/meetings.php', 'calendar'],
     ];
 }
 
+/** Prints a small icon for the side navigation. */
+function nav_icon(string $name): void
+{
+    $paths = [
+        'grid'     => '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+        'users'    => '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.4c2 .7 3.5 2.5 3.5 5.6"/>',
+        'file'     => '<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/>',
+        'flag'     => '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
+        'calendar' => '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+    ];
+    echo '<svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+       . ($paths[$name] ?? '') . '</svg>';
+}
+
 /**
- * Prints the top bar (logo, user, theme, sign out) and the navigation bar
- * for signed-in pages. $active is the key of the current page.
+ * Opens the layout of signed-in pages: the side navigation, and a top bar
+ * with a menu button on small screens. $active is the key of the current page.
+ * Call layout_app_close() after the page's <main> element.
  */
-function layout_app_topbar(array $user, string $active): void
+function layout_app_open(array $user, string $active): void
 {
     ?>
-  <header class="topbar">
-    <?php layout_brand(app_url(dashboard_path($user['role']))); ?>
-    <div class="topbar-user">
-      <span class="topbar-name"><?= e($user['full_name']) ?></span>
-      <span class="role-tag"><?= e(ucfirst($user['role'])) ?></span>
-      <?php layout_theme_toggle(); ?>
-      <button type="button" class="btn btn-quiet btn-sm" data-logout>Sign out</button>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <?php layout_brand(app_url(dashboard_path($user['role']))); ?>
     </div>
-  </header>
-  <nav class="app-nav" aria-label="Main">
-    <ul class="container app-nav-list">
-      <?php foreach (nav_items_for($user['role']) as $key => [$label, $path]): ?>
-        <li><a href="<?= e(app_url($path)) ?>"<?= $key === $active ? ' aria-current="page"' : '' ?>><?= e($label) ?></a></li>
-      <?php endforeach; ?>
-    </ul>
-  </nav>
+    <nav class="sidebar-nav" aria-label="Main">
+      <ul>
+        <?php foreach (nav_items_for($user['role']) as $key => [$label, $path, $icon]): ?>
+          <li>
+            <a href="<?= e(app_url($path)) ?>"<?= $key === $active ? ' aria-current="page"' : '' ?>>
+              <?php nav_icon($icon); ?><span><?= e($label) ?></span>
+            </a>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+    </nav>
+    <div class="sidebar-user">
+      <p class="sidebar-name"><?= e($user['full_name']) ?></p>
+      <p class="sidebar-role"><?= e(ucfirst($user['role'])) ?></p>
+      <div class="sidebar-actions">
+        <?php layout_theme_toggle(); ?>
+        <button type="button" class="btn btn-quiet btn-sm" data-logout>Sign out</button>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-backdrop" data-sidebar-close hidden></div>
+
+  <div class="app-main">
+    <header class="mobile-bar">
+      <button type="button" class="icon-btn" data-sidebar-toggle aria-expanded="false" aria-controls="sidebar" aria-label="Open menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <?php layout_brand(app_url(dashboard_path($user['role']))); ?>
+      <?php layout_theme_toggle(); ?>
+    </header>
     <?php
+}
+
+/** Closes the layout opened by layout_app_open(). */
+function layout_app_close(): void
+{
+    echo "  </div>\n</div>\n";
 }
