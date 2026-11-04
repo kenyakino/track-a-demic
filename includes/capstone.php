@@ -476,3 +476,199 @@ function meeting_view(array $row): array
         'created_at'   => $row['created_at'],
     ];
 }
+
+/* ------------------------------------------------------------
+ * References
+ * ---------------------------------------------------------- */
+
+const REFERENCE_TITLE_MIN  = 3;
+const REFERENCE_TITLE_MAX  = 255;
+const REFERENCE_AUTHOR_MIN = 2;
+const REFERENCE_AUTHOR_MAX = 150;
+const REFERENCE_LINK_MAX   = 500;
+
+/** Checks a reference form. Returns [title, author, year or null, link or null, errors]. */
+function validate_reference_input(array $input): array
+{
+    $title  = trim(preg_replace('/\s+/u', ' ', (string) ($input['title'] ?? '')) ?? '');
+    $author = trim(preg_replace('/\s+/u', ' ', (string) ($input['author'] ?? '')) ?? '');
+    $yearText = trim((string) ($input['pub_year'] ?? ''));
+    $link   = trim((string) ($input['link'] ?? ''));
+
+    $errors = [];
+
+    $titleLength = text_length($title);
+    if ($titleLength < REFERENCE_TITLE_MIN || $titleLength > REFERENCE_TITLE_MAX) {
+        $errors['title'] = 'Use ' . REFERENCE_TITLE_MIN . ' to ' . REFERENCE_TITLE_MAX . ' characters for the title.';
+    }
+
+    $authorLength = text_length($author);
+    if ($authorLength < REFERENCE_AUTHOR_MIN || $authorLength > REFERENCE_AUTHOR_MAX) {
+        $errors['author'] = 'Use ' . REFERENCE_AUTHOR_MIN . ' to ' . REFERENCE_AUTHOR_MAX . ' characters for the author.';
+    }
+
+    $year = null;
+    if ($yearText !== '') {
+        $maxYear = (int) date('Y') + 1;
+        if (!ctype_digit($yearText) || (int) $yearText < 1900 || (int) $yearText > $maxYear) {
+            $errors['pub_year'] = 'Enter a year between 1900 and ' . $maxYear . ', or leave it empty.';
+        } else {
+            $year = (int) $yearText;
+        }
+    }
+
+    if ($link === '') {
+        $link = null;
+    } else {
+        $scheme = strtolower((string) parse_url($link, PHP_URL_SCHEME));
+        if (text_length($link) > REFERENCE_LINK_MAX || !filter_var($link, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true)) {
+            $errors['link'] = 'Enter a full web address that starts with http:// or https://, or leave it empty.';
+        }
+    }
+
+    return [$title, $author, $year, $link, $errors];
+}
+
+function reference_view(array $row): array
+{
+    return [
+        'id'         => (int) $row['id'],
+        'title'      => $row['title'],
+        'author'     => $row['author'],
+        'pub_year'   => $row['pub_year'] !== null ? (int) $row['pub_year'] : null,
+        'link'       => $row['link'],
+        'created_at' => $row['created_at'],
+    ];
+}
+
+function group_reference_rows(int $groupId): array
+{
+    $stmt = db()->prepare('SELECT id, title, author, pub_year, link, created_at FROM references_list WHERE group_id = ? ORDER BY id DESC');
+    $stmt->execute([$groupId]);
+    return array_map('reference_view', $stmt->fetchAll());
+}
+
+/* ------------------------------------------------------------
+ * Files
+ * ---------------------------------------------------------- */
+
+/** Upload limits and folder from config.php, with safe defaults. */
+function upload_settings(): array
+{
+    $config = app_config()['upload'] ?? [];
+    $dir = (string) ($config['dir'] ?? (__DIR__ . '/../uploads'));
+
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+
+    return [
+        'max_size'    => (int) ($config['max_size'] ?? 5 * 1024 * 1024),
+        'allowed_ext' => array_map('strtolower', (array) ($config['allowed_ext'] ?? ['pdf', 'docx'])),
+        'dir'         => realpath($dir) ?: $dir,
+    ];
+}
+
+/** Turns a php.ini size such as "8M" or "512K" into bytes. */
+function ini_bytes(string $value): int
+{
+    $value = trim($value);
+    $number = (int) $value;
+
+    switch (strtolower(substr($value, -1))) {
+        case 'g': return $number * 1024 * 1024 * 1024;
+        case 'm': return $number * 1024 * 1024;
+        case 'k': return $number * 1024;
+        default:  return $number;
+    }
+}
+
+/** File types the system knows how to check, by extension. */
+const UPLOAD_TYPES = [
+    'pdf'  => 'application/pdf',
+    'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+/** Keeps the readable part of an uploaded file's name and drops anything risky. */
+function clean_upload_name(string $name): string
+{
+    $name = basename(str_replace('\\', '/', $name));
+    $name = preg_replace('/[\x00-\x1F\x7F"<>|?*:]+/u', '', $name) ?? '';
+    $name = trim($name, " .\t\n\r");
+
+    if (text_length($name) > 150) {
+        $ext = pathinfo($name, PATHINFO_EXTENSION);
+        $name = (function_exists('mb_substr') ? mb_substr($name, 0, 140) : substr($name, 0, 140)) . ($ext !== '' ? '.' . $ext : '');
+    }
+
+    return $name !== '' ? $name : 'file';
+}
+
+/**
+ * Looks inside the uploaded file to confirm it really is what its extension
+ * says. Returns the content type, or null if the content does not match.
+ */
+function detect_upload_type(string $path, string $extension): ?string
+{
+    $head = (string) file_get_contents($path, false, null, 0, 8);
+
+    if ($extension === 'pdf') {
+        return str_starts_with($head, '%PDF-') ? UPLOAD_TYPES['pdf'] : null;
+    }
+
+    if ($extension === 'docx') {
+        if (substr($head, 0, 4) !== "PK\x03\x04") {
+            return null;
+        }
+        if (class_exists('ZipArchive')) {
+            $zip = new ZipArchive();
+            if ($zip->open($path) !== true) {
+                return null;
+            }
+            $isWord = $zip->locateName('word/document.xml') !== false;
+            $zip->close();
+            if (!$isWord) {
+                return null;
+            }
+        } else {
+            // Without the zip extension, look for the Word document entry in the file's own index
+            $content = (string) file_get_contents($path);
+            if (strpos($content, 'word/document.xml') === false || strpos($content, '[Content_Types].xml') === false) {
+                return null;
+            }
+        }
+        return UPLOAD_TYPES['docx'];
+    }
+
+    return null;
+}
+
+/** Files of a group with who uploaded them and the milestone they belong to. */
+function group_file_rows(int $groupId): array
+{
+    $stmt = db()->prepare(
+        'SELECT f.id, f.file_name, f.file_size, f.uploaded_at, f.uploaded_by, u.full_name AS uploader,
+                f.milestone_id, t.name AS milestone_name
+           FROM files f
+           JOIN users u ON u.id = f.uploaded_by
+           LEFT JOIN group_milestones gm ON gm.id = f.milestone_id
+           LEFT JOIN milestone_templates t ON t.id = gm.template_id
+          WHERE f.group_id = ?
+          ORDER BY f.id DESC'
+    );
+    $stmt->execute([$groupId]);
+    return $stmt->fetchAll();
+}
+
+function file_view(array $row, int $viewerId, bool $viewerIsLeader): array
+{
+    return [
+        'id'             => (int) $row['id'],
+        'name'           => $row['file_name'],
+        'size'           => (int) $row['file_size'],
+        'uploaded_at'    => $row['uploaded_at'],
+        'uploader'       => $row['uploader'],
+        'milestone_name' => $row['milestone_name'],
+        'can_delete'     => $viewerIsLeader || (int) $row['uploaded_by'] === $viewerId,
+    ];
+}
