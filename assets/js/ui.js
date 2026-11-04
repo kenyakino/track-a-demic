@@ -40,6 +40,13 @@ export const formatDate = (value) => {
   return dateFormat.format(new Date(year, month - 1, day));
 };
 
+/** 2048 becomes "2.0 KB". */
+export const formatBytes = (bytes) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+};
+
 /** Shows a short message in the corner. type is "success" or "error". */
 export const toast = (message, type = 'success') => {
   const host = document.querySelector('[data-toasts]');

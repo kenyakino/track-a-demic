@@ -28,6 +28,17 @@ export const postJson = async (file, payload = {}) =>
     })
   );
 
+/** POST a form with files (multipart). The browser sets the content type itself. */
+export const postForm = async (file, formData) =>
+  parse(
+    await fetch(apiUrl(file), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'X-CSRF-Token': csrfToken },
+      body: formData,
+    })
+  );
+
 /** Send the visitor to the login page (used when the session has ended). */
 export const goToLogin = () => {
   window.location.href = `${baseUrl}/pages/login.php`;
