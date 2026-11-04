@@ -9,6 +9,19 @@ declare(strict_types=1);
 require_once __DIR__ . '/auth.php';
 
 /**
+ * URL of a file under the project (CSS, JavaScript). The file's last-changed
+ * time is added so browsers load the new version right after you update it,
+ * instead of showing a stale copy from their cache.
+ */
+function asset_url(string $path): string
+{
+    $file = __DIR__ . '/../' . ltrim($path, '/');
+    $version = is_file($file) ? (string) filemtime($file) : '1';
+
+    return app_url($path) . '?v=' . $version;
+}
+
+/**
  * Prints the contents of <head>.
  * The small inline script sets the saved (or system) theme before the page
  * paints, so there is no flash of the wrong colors.
@@ -30,12 +43,15 @@ function layout_head(string $title, ?string $csrf = null): void
         theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       }
       document.documentElement.setAttribute('data-theme', theme);
+      try {
+        if (localStorage.getItem('sidebar') === 'collapsed') document.documentElement.setAttribute('data-sidebar', 'collapsed');
+      } catch (e) {}
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(app_url('assets/css/style.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/style.css')) ?>">
     <?php
 }
 
@@ -55,7 +71,7 @@ function layout_brand(string $href): void
     <circle class="brand-dot" cx="5" cy="22" r="3"/>
     <circle cx="23" cy="6" r="3" fill="currentColor"/>
   </svg>
-  Track-a-Demic
+  <span class="brand-name">Track-a-Demic</span>
 </a>
     <?php
 }
@@ -89,6 +105,7 @@ function nav_items_for(string $role): array
             'topics'     => ['Topic reviews', 'pages/adviser/topics.php', 'file'],
             'milestones' => ['Milestones', 'pages/adviser/milestones.php', 'flag'],
             'meetings'   => ['Meetings', 'pages/adviser/meetings.php', 'calendar'],
+            'files'      => ['Files and references', 'pages/adviser/files.php', 'folder'],
         ];
     }
 
@@ -96,6 +113,8 @@ function nav_items_for(string $role): array
         'dashboard'  => ['Dashboard', 'pages/student/dashboard.php', 'grid'],
         'milestones' => ['Milestones', 'pages/student/milestones.php', 'flag'],
         'meetings'   => ['Meetings', 'pages/student/meetings.php', 'calendar'],
+        'references' => ['References', 'pages/student/references.php', 'book'],
+        'files'      => ['Files', 'pages/student/files.php', 'folder'],
     ];
 }
 
@@ -108,6 +127,8 @@ function nav_icon(string $name): void
         'file'     => '<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/>',
         'flag'     => '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
         'calendar' => '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+        'book'     => '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>',
+        'folder'   => '<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
     ];
     echo '<svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
        . ($paths[$name] ?? '') . '</svg>';
@@ -125,12 +146,15 @@ function layout_app_open(array $user, string $active): void
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-top">
       <?php layout_brand(app_url(dashboard_path($user['role']))); ?>
+      <button type="button" class="icon-btn sidebar-collapse" data-sidebar-collapse aria-expanded="true" aria-controls="sidebar" aria-label="Collapse menu" title="Collapse menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
     </div>
     <nav class="sidebar-nav" aria-label="Main">
       <ul>
         <?php foreach (nav_items_for($user['role']) as $key => [$label, $path, $icon]): ?>
           <li>
-            <a href="<?= e(app_url($path)) ?>"<?= $key === $active ? ' aria-current="page"' : '' ?>>
+            <a href="<?= e(app_url($path)) ?>" title="<?= e($label) ?>"<?= $key === $active ? ' aria-current="page"' : '' ?>>
               <?php nav_icon($icon); ?><span><?= e($label) ?></span>
             </a>
           </li>
@@ -142,7 +166,10 @@ function layout_app_open(array $user, string $active): void
       <p class="sidebar-role"><?= e(ucfirst($user['role'])) ?></p>
       <div class="sidebar-actions">
         <?php layout_theme_toggle(); ?>
-        <button type="button" class="btn btn-quiet btn-sm" data-logout>Sign out</button>
+        <button type="button" class="btn btn-quiet btn-sm sidebar-signout" data-logout aria-label="Sign out" title="Sign out">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M16 8l4 4-4 4M20 12H9"/></svg>
+          <span>Sign out</span>
+        </button>
       </div>
     </div>
   </aside>

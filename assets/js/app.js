@@ -1,6 +1,7 @@
 /**
- * Behavior shared by signed-in pages: the Sign out button and the side
- * navigation drawer used on tablets and phones.
+ * Behavior shared by signed-in pages: the Sign out button, the side
+ * navigation drawer used on tablets and phones, and the collapsed (icon
+ * only) side navigation on larger screens.
  */
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
@@ -48,3 +49,34 @@ document.addEventListener('keydown', ({ key }) => {
 window.matchMedia('(min-width: 1024px)').addEventListener('change', ({ matches }) => {
   if (matches) setSidebarOpen(false);
 });
+
+/* ---------- Collapsed side navigation (large screens) ---------- */
+
+const root = document.documentElement;
+const collapseButton = document.querySelector('[data-sidebar-collapse]');
+
+const showCollapseState = () => {
+  const collapsed = root.dataset.sidebar === 'collapsed';
+  const label = collapsed ? 'Expand menu' : 'Collapse menu';
+
+  collapseButton?.setAttribute('aria-expanded', String(!collapsed));
+  collapseButton?.setAttribute('aria-label', label);
+  collapseButton?.setAttribute('title', label);
+};
+
+collapseButton?.addEventListener('click', () => {
+  const collapsed = root.dataset.sidebar !== 'collapsed';
+
+  if (collapsed) root.dataset.sidebar = 'collapsed';
+  else delete root.dataset.sidebar;
+
+  try {
+    localStorage.setItem('sidebar', collapsed ? 'collapsed' : 'expanded');
+  } catch (error) {
+    // Storage can be blocked; the menu still collapses for this visit
+  }
+
+  showCollapseState();
+});
+
+showCollapseState();

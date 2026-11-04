@@ -645,7 +645,9 @@ body.sidebar-open .sidebar { visibility: visible; transform: none; }
 
 .sidebar-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, 0.5); }
 
-.sidebar-top { padding: 0.25rem 0.5rem; }
+.sidebar-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.25rem 0.5rem; }
+.sidebar-collapse { display: none; flex: none; }
+.sidebar-signout { gap: 0.5rem; }
 
 .sidebar-nav ul { display: grid; gap: 0.25rem; margin: 0; padding: 0; list-style: none; }
 
@@ -705,6 +707,33 @@ body.sidebar-open .sidebar { visibility: visible; transform: none; }
   }
 
   .mobile-bar, .sidebar-backdrop { display: none; }
+
+  .app-shell { transition: grid-template-columns 0.2s ease; }
+  .sidebar-collapse { display: inline-grid; }
+  .sidebar-collapse svg { transition: transform 0.2s ease; }
+
+  /* Collapsed: only the icons stay, in a narrow strip on the left */
+  html[data-sidebar="collapsed"] .app-shell { grid-template-columns: 4.75rem minmax(0, 1fr); }
+  html[data-sidebar="collapsed"] .sidebar { padding-inline: 0.6rem; }
+  html[data-sidebar="collapsed"] .sidebar-top { flex-direction: column; justify-content: center; padding-inline: 0; }
+  html[data-sidebar="collapsed"] .sidebar-collapse svg { transform: rotate(180deg); }
+  html[data-sidebar="collapsed"] .brand-name,
+  html[data-sidebar="collapsed"] .sidebar-name,
+  html[data-sidebar="collapsed"] .sidebar-role { display: none; }
+  html[data-sidebar="collapsed"] .sidebar-nav a { justify-content: center; padding-inline: 0; }
+  html[data-sidebar="collapsed"] .sidebar-nav a[aria-current="page"] { box-shadow: inset 3px 0 0 var(--secondary); }
+  html[data-sidebar="collapsed"] .sidebar-nav a span,
+  html[data-sidebar="collapsed"] .sidebar-signout span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  html[data-sidebar="collapsed"] .sidebar-user { padding-inline: 0; }
+  html[data-sidebar="collapsed"] .sidebar-actions { flex-direction: column; margin-top: 0; }
+  html[data-sidebar="collapsed"] .sidebar-signout { width: 2.5rem; padding: 0; }
 }
 
 .role-tag {
@@ -1017,8 +1046,53 @@ body.sidebar-open .sidebar { visibility: visible; transform: none; }
 
 .label-text { display: block; margin: 0 0 0.35rem; font-size: 0.92rem; font-weight: 600; }
 
+/* ---------- References and files ---------- */
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0 0 1.25rem; }
+.toolbar .search { flex: 1 1 14rem; max-width: 28rem; }
+
+.control {
+  min-height: 2.75rem;
+  max-width: 100%;
+  padding: 0.5rem 0.8rem;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--muted);
+  border-radius: 8px;
+}
+.control:hover { border-color: var(--ink); }
+.field .control { width: 100%; }
+
+.result-count { margin: 0 0 0.75rem; font-size: 0.9rem; color: var(--muted); }
+.card-flush .result-count { padding: 0; }
+
+.reference-list { display: grid; gap: 1rem; }
+@media (min-width: 1180px) { .reference-list { grid-template-columns: 1fr 1fr; align-items: start; } }
+.reference-title { margin-bottom: 0.3rem; font-size: 1.15rem; overflow-wrap: anywhere; }
+.reference-card .meta a { overflow-wrap: anywhere; }
+
+.file-name { font-weight: 600; overflow-wrap: anywhere; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+.source-list { margin: 0; padding: 0; list-style: none; }
+.source-list li { display: grid; gap: 0.15rem; padding: 0.7rem 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+
+.field input[type="file"] { padding: 0.45rem 0.6rem; }
+.field input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.45rem 0.85rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--brand-ink);
+  background: var(--brand);
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .btn, .sidebar { transition: none; }
+  .btn, .sidebar, .app-shell, .sidebar-collapse svg { transition: none; }
   .skeleton { animation: none; }
 }
