@@ -154,6 +154,14 @@ Share the code only with advisers. The default placeholder code is rejected when
 | `api/meeting-delete.php` | Delete an unconfirmed meeting (POST) |
 | `api/adviser-meetings.php` | Meeting logs of the adviser's groups (GET) |
 | `api/meeting-confirm.php` | Confirm a meeting log, or reopen it (POST) |
+| `api/student-references.php` | Student's group references (GET) |
+| `api/reference-save.php` | Add or edit a reference (POST) |
+| `api/reference-delete.php` | Delete a reference (POST) |
+| `api/student-files.php` | Student's group files and upload limits (GET) |
+| `api/file-upload.php` | Upload a PDF or DOCX file (POST, multipart) |
+| `api/file-delete.php` | Delete a file (POST, uploader or group leader) |
+| `api/file-download.php` | Download a file after a permission check (GET) |
+| `api/adviser-library.php` | References and files of the adviser's groups (GET) |
 
 ## Student Dashboard
 
@@ -191,6 +199,19 @@ An adviser can only see and change their own groups. The server checks ownership
 - Students log adviser meetings with the date, notes, and action items. The date cannot be in the future.
 - The adviser confirms a meeting. A confirmed meeting is locked for the students, and the adviser can reopen it if it needs a fix.
 
+## References and Files
+
+**References:** any member of a group can add, edit, and delete the group's references (title, author, optional year and web address). The list has live search and sorting by newest, title, or year. Web addresses must start with `http://` or `https://`.
+
+**Files:** group members upload drafts as **PDF or DOCX**, up to 5 MB each (change `upload` in `config/config.php`). Optionally a file is attached to a milestone.
+- The server checks the extension, the size, and the real content of the file. A text file renamed to `.pdf` is rejected.
+- Files are saved under a random name in `uploads/`, never under the name the user typed.
+- `uploads/` cannot be opened directly from the web (see `uploads/.htaccess`). Files are served by `api/file-download.php`, which only allows the group's members and the group's adviser.
+- The uploader or the group leader can delete a file. Advisers can read and download but not delete.
+- The host's PHP settings (`upload_max_filesize`, `post_max_size`) also limit uploads. A too-large file gets a clear message.
+
+Advisers see every group's references and files on one page, with a group filter and search.
+
 ## Design and Theme
 
 The interface is responsive and tested for these minimum sizes: desktop 1366x768, tablet 768x1024, and mobile 375x667.
@@ -203,45 +224,9 @@ The interface is responsive and tested for these minimum sizes: desktop 1366x768
 | Secondary (links, progress, accents) | `#2F6B4A` forest green |
 | Secondary tint | `#CBDCD1` |
 
-Signed-in pages use a side navigation. On desktop it stays on the left with the user's name, theme switch, and Sign out. On tablets and phones it becomes a menu that slides in from the left. It lists the pages for the user's role and marks the current page. A **dark mode** switch is in every page header. The choice is saved with `localStorage`, so it stays after a refresh. If nothing is saved yet, the page follows the device's light or dark setting. Colors are defined once as CSS variables at the top of `assets/css/style.css`.
+Signed-in pages use a side navigation. On desktop it stays on the left with the user's name, theme switch, and Sign out. On tablets and phones it becomes a menu that slides in from the left. It lists the pages for the user's role and marks the current page. On desktop, the arrow at the top collapses it to an icon strip, and the choice is remembered with `localStorage`. A **dark mode** switch is in every page header. The choice is saved with `localStorage`, so it stays after a refresh. If nothing is saved yet, the page follows the device's light or dark setting. Colors are defined once as CSS variables at the top of `assets/css/style.css`.
 
 Shared page pieces (head, logo, theme button) live in `includes/layout.php`, so every page uses the same markup.
-
-## Documentation
-
-System diagrams are in `docs/diagrams/`. Each has a PNG (for documents and slides) and an SVG (editable). The `source/` folder holds the files used to generate them.
-
-### System architecture
-
-![System architecture](docs/diagrams/architecture.png)
-
-### Entity relationship diagram
-
-![Entity relationship diagram](docs/diagrams/erd.png)
-
-### Use case diagram
-
-![Use case diagram](docs/diagrams/use-case.png)
-
-### Flowcharts
-
-Registration, login, and access control:
-
-![Authentication flowchart](docs/diagrams/flowchart-authentication.png)
-
-Capstone workflow, from topic proposal to defense:
-
-![Capstone workflow flowchart](docs/diagrams/flowchart-capstone-workflow.png)
-
-To regenerate the diagrams, install [Graphviz](https://graphviz.org/download/) and Python 3, then run from `docs/diagrams/source`:
-
-```
-neato -Tpng -Gdpi=150 erd.dot -o ../erd.png
-dot -Tpng -Gdpi=150 architecture.dot -o ../architecture.png
-dot -Tpng -Gdpi=150 flowchart_authentication.dot -o ../flowchart-authentication.png
-dot -Tpng -Gdpi=150 flowchart_capstone_workflow.dot -o ../flowchart-capstone-workflow.png
-python3 use_case.py
-```
 
 ## Deployment (InfinityFree)
 
