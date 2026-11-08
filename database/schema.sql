@@ -163,10 +163,16 @@ CREATE TABLE IF NOT EXISTS references_list (
 
 -- ------------------------------------------------------------
 -- files: uploaded drafts and documents
+-- source_type tells where a file came from:
+--   direct     uploaded on the Files page
+--   topic      the proposal file sent with a topic (topic_id is set)
+--   milestone  the file sent when submitting a milestone (milestone_id is set)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS files (
   id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
   group_id     INT UNSIGNED NOT NULL,
+  source_type  ENUM('direct','topic','milestone') NOT NULL DEFAULT 'direct',
+  topic_id     INT UNSIGNED NULL,
   milestone_id INT UNSIGNED NULL,
   file_name    VARCHAR(255) NOT NULL,
   file_path    VARCHAR(255) NOT NULL,
@@ -175,10 +181,13 @@ CREATE TABLE IF NOT EXISTS files (
   uploaded_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_files_group (group_id),
+  KEY idx_files_topic (topic_id),
   KEY idx_files_milestone (milestone_id),
   KEY idx_files_user (uploaded_by),
   CONSTRAINT fk_files_group FOREIGN KEY (group_id)
     REFERENCES capstone_groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_files_topic FOREIGN KEY (topic_id)
+    REFERENCES topics (id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_files_milestone FOREIGN KEY (milestone_id)
     REFERENCES group_milestones (id) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_files_user FOREIGN KEY (uploaded_by)
