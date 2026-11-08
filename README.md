@@ -99,6 +99,14 @@ The sample data is for development and demos only. Do not import `seed.sql` on a
 | files | Uploaded drafts and documents |
 | notifications | In-system alerts |
 
+### Updating an existing database
+
+Fresh installs use `schema.sql` and already have everything. If you created your database earlier, run the files in `database/migrations/` once, in order, in phpMyAdmin (select the database, open **SQL**, paste the file, and click **Go**).
+
+| Migration | What it adds |
+|---|---|
+| `001-file-sources.sql` | Where each file came from (`source_type`, `topic_id` on the `files` table) |
+
 ## Authentication
 
 - Passwords are hashed with PHP's `password_hash()` and checked with `password_verify()`. Plain-text passwords are never stored.
@@ -128,8 +136,8 @@ Share the code only with advisers. The default placeholder code is rejected when
 | `api/logout.php` | Sign out |
 | `api/me.php` | Current signed-in user |
 | `api/student-overview.php` | Student's group, topic, and milestones (GET) |
-| `api/topic-create.php` | Propose a topic (POST) |
-| `api/topic-update.php` | Edit a topic and send it back for review (POST) |
+| `api/topic-create.php` | Propose a topic with its proposal file (POST, multipart) |
+| `api/topic-update.php` | Edit a topic and send it back for review, with a new file when required (POST, multipart) |
 | `api/topic-delete.php` | Delete a topic (POST, group leader only) |
 | `api/adviser-overview.php` | Adviser's totals, attention list, and groups (GET) |
 | `api/adviser-groups.php` | Adviser's groups with members, plus students without a group (GET) |
@@ -162,6 +170,7 @@ Share the code only with advisers. The default placeholder code is rejected when
 | `api/file-delete.php` | Delete a file (POST, uploader or group leader) |
 | `api/file-download.php` | Download a file after a permission check (GET) |
 | `api/adviser-library.php` | References and files of the adviser's groups (GET) |
+| `api/milestone-submit.php` | Submit a milestone with a file (POST, multipart) |
 
 ## Student Dashboard
 
@@ -212,6 +221,14 @@ An adviser can only see and change their own groups. The server checks ownership
 
 Advisers see every group's references and files on one page, with a group filter and search.
 
+## Required Files and Where Files Come From
+
+- **Topic proposals** must be sent with a proposal file (PDF or DOCX). Editing a topic that still waits for review keeps the current file unless a new one is attached. After the adviser requests a revision, a **new file is required** to resubmit.
+- **Submitting a milestone for review** requires a file (PDF or DOCX) every time, including after "Needs Rework" or a withdrawn submission.
+- A new file **replaces** the previous one for the same topic or milestone: the old file is deleted. Deleting a topic deletes its proposal file.
+- Every file shows up on the Files page with a **Source** column: *Topic proposal*, *Milestone*, or *Direct upload* (files added on the Files page). Only direct uploads can be deleted by hand.
+- The adviser downloads the proposal file from the topic review, and the milestone file from the milestone review.
+
 ## Design and Theme
 
 The interface is responsive and tested for these minimum sizes: desktop 1366x768, tablet 768x1024, and mobile 375x667.
@@ -224,7 +241,7 @@ The interface is responsive and tested for these minimum sizes: desktop 1366x768
 | Secondary (links, progress, accents) | `#2F6B4A` forest green |
 | Secondary tint | `#CBDCD1` |
 
-Signed-in pages use a side navigation. On desktop it stays on the left with the user's name, theme switch, and Sign out. On tablets and phones it becomes a menu that slides in from the left. It lists the pages for the user's role and marks the current page. On desktop, the arrow at the top collapses it to an icon strip, and the choice is remembered with `localStorage`. A **dark mode** switch is in every page header. The choice is saved with `localStorage`, so it stays after a refresh. If nothing is saved yet, the page follows the device's light or dark setting. Colors are defined once as CSS variables at the top of `assets/css/style.css`.
+Signed-in pages use a side navigation. On desktop it stays on the left with the user's name, theme switch, and Sign out. On tablets and phones it becomes a menu that slides in from the left. It lists the pages for the user's role and marks the current page. On desktop, the arrow at the top collapses it to an icon strip, and the choice is remembered with `localStorage`. A **dark mode switch** (an on/off toggle with a sun and a moon) is on every page. The choice is saved with `localStorage`, so it stays after a refresh. If nothing is saved yet, the page follows the device's light or dark setting. Colors are defined once as CSS variables at the top of `assets/css/style.css`.
 
 Shared page pieces (head, logo, theme button) live in `includes/layout.php`, so every page uses the same markup.
 
