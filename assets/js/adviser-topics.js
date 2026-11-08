@@ -4,7 +4,7 @@
  */
 
 import { getJson, postJson, goToLogin, baseUrl } from './api.js';
-import { html, mount, formatDate, toast } from './ui.js';
+import { html, mount, formatDate, formatBytes, toast } from './ui.js';
 import { badge } from './labels.js';
 
 const app = document.getElementById('app');
@@ -111,6 +111,9 @@ const renderDialog = () => {
       </div>
       <p class="topic-desc">${topic.description}</p>
       <p class="meta">Submitted ${formatDate(topic.submitted_at)}. Last updated ${formatDate(topic.updated_at)}.</p>
+      ${topic.file
+        ? html`<p class="meta">Proposal file: <a href="${baseUrl}/api/file-download.php?id=${topic.file.id}">${topic.file.name}</a> (${formatBytes(topic.file.size)})</p>`
+        : html`<p class="meta">No proposal file was attached.</p>`}
       ${topic.adviser_remarks
         ? html`<div class="remarks ${waiting ? 'remarks-warn' : ''}"><strong>Your remarks</strong><p>${topic.adviser_remarks}</p></div>`
         : ''}

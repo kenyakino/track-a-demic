@@ -54,6 +54,13 @@ $csrf = csrf_token();
         <p class="field-error" id="description-error" data-error-for="description"></p>
       </div>
 
+      <div class="field">
+        <label for="topic-file" id="topic-file-label">Proposal file (required)</label>
+        <input id="topic-file" name="file" type="file" accept=".pdf,.docx" aria-describedby="file-hint file-error">
+        <p class="hint" id="file-hint" data-file-hint></p>
+        <p class="field-error" id="file-error" data-error-for="file"></p>
+      </div>
+
       <div class="dialog-actions">
         <button type="button" class="btn btn-quiet" data-close>Cancel</button>
         <button type="submit" class="btn btn-primary" data-submit>Submit for review</button>

@@ -29,6 +29,27 @@ $csrf = csrf_token();
   </main>
   <?php layout_app_close(); ?>
 
+  <dialog id="submit-dialog" class="dialog" aria-labelledby="submit-title">
+    <form id="submit-form" class="dialog-body" novalidate>
+      <h2 id="submit-title">Submit for review</h2>
+      <p class="lead dialog-lead" id="submit-subtitle"></p>
+      <div class="alert alert-error" data-alert role="alert" hidden></div>
+      <input type="hidden" name="id" value="">
+
+      <div class="field">
+        <label for="submit-file">File for your adviser to check</label>
+        <input id="submit-file" name="file" type="file" accept=".pdf,.docx" aria-describedby="submit-hint file-error">
+        <p class="hint" id="submit-hint"></p>
+        <p class="field-error" id="file-error" data-error-for="file"></p>
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-quiet" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" data-submit>Submit for review</button>
+      </div>
+    </form>
+  </dialog>
+
   <div class="toasts" data-toasts role="status" aria-live="polite"></div>
 
   <script type="module" src="<?= e(app_url('assets/js/theme.js')) ?>"></script>

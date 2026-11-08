@@ -28,7 +28,7 @@ const referenceItem = (reference) => {
 
 const fileRow = (file) => html`<tr>
   <td data-label="File"><span class="file-name">${file.name}</span></td>
-  <td data-label="Milestone">${file.milestone_name ?? html`<span class="meta-inline">None</span>`}</td>
+  <td data-label="Source">${file.source.label}</td>
   <td data-label="Uploaded by">${file.uploader}</td>
   <td data-label="Date">${formatDate(file.uploaded_at)}</td>
   <td data-label="Size">${formatBytes(file.size)}</td>
@@ -37,7 +37,7 @@ const fileRow = (file) => html`<tr>
 
 const groupCard = (group, query) => {
   const references = group.references.filter((item) => includes(`${item.title} ${item.author} ${item.pub_year ?? ''}`, query));
-  const files = group.files.filter((item) => includes(`${item.name} ${item.milestone_name ?? ''} ${item.uploader}`, query));
+  const files = group.files.filter((item) => includes(`${item.name} ${item.source.label} ${item.uploader}`, query));
 
   return html`<article class="card">
     <div class="card-head"><h2>${group.name}</h2></div>
@@ -51,7 +51,7 @@ const groupCard = (group, query) => {
     ${files.length
       ? html`<table class="table">
           <thead>
-            <tr><th scope="col">File</th><th scope="col">Milestone</th><th scope="col">Uploaded by</th><th scope="col">Date</th><th scope="col">Size</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
+            <tr><th scope="col">File</th><th scope="col">Source</th><th scope="col">Uploaded by</th><th scope="col">Date</th><th scope="col">Size</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
           </thead>
           <tbody>${files.map(fileRow)}</tbody>
         </table>`

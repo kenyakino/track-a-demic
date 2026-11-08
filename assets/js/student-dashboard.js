@@ -3,8 +3,8 @@
  * and handles creating, editing, and deleting the group's topic.
  */
 
-import { getJson, postJson, goToLogin, baseUrl } from './api.js';
-import { html, mount, formatDate, toast } from './ui.js';
+import { getJson, postJson, postForm, goToLogin, baseUrl } from './api.js';
+import { html, mount, formatDate, formatBytes, toast } from './ui.js';
 import { TOPIC_STATUS, badge } from './labels.js';
 
 const app = document.getElementById('app');
@@ -13,6 +13,7 @@ const topicForm = document.getElementById('topic-form');
 const confirmDialog = document.getElementById('confirm-dialog');
 
 let overview = null;
+let limits = { max_size: 5 * 1024 * 1024, allowed_ext: ['pdf', 'docx'] };
 let pendingDeleteId = null;
 
 /* ---------- Labels ---------- */
@@ -48,6 +49,11 @@ const commentsBlock = (topic) =>
           )}
         </ul>
       </section>`
+    : '';
+
+const fileBlock = (topic) =>
+  topic.file
+    ? html`<p class="meta">Proposal file: <a href="${baseUrl}/api/file-download.php?id=${topic.file.id}">${topic.file.name}</a> (${formatBytes(topic.file.size)})</p>`
     : '';
 
 const topicCard = ({ topic, previous_topics: previous }) => {
@@ -88,6 +94,7 @@ const topicCard = ({ topic, previous_topics: previous }) => {
     <h3 class="topic-title">${topic.title}</h3>
     <p class="topic-desc">${topic.description}</p>
     <p class="meta">Submitted ${formatDate(topic.submitted_at)}. Last updated ${formatDate(topic.updated_at)}.</p>
+    ${fileBlock(topic)}
     ${remarksBlock(topic)}
     ${commentsBlock(topic)}
     ${topic.can_edit || topic.can_delete
@@ -193,6 +200,7 @@ const load = async () => {
     }
 
     overview = data;
+    limits = data.limits ?? limits;
     render();
   } catch (error) {
     mount(app, errorCard('Could not reach the server. Check your connection and try again.'));
@@ -220,6 +228,19 @@ const updateCounters = () => {
   });
 };
 
+const typesText = () => limits.allowed_ext.map((ext) => ext.toUpperCase()).join(' or ');
+
+/** Checks the chosen file in the browser. The server checks it again. */
+const checkFile = (file, required) => {
+  if (!file) return required ? 'Choose the proposal file.' : '';
+
+  const extension = file.name.split('.').pop().toLowerCase();
+  if (!limits.allowed_ext.includes(extension)) return `Only ${typesText()} files are allowed.`;
+  if (file.size === 0) return 'The file is empty.';
+  if (file.size > limits.max_size) return `The file is too large. The limit is ${formatBytes(limits.max_size)}.`;
+  return '';
+};
+
 const validateTopic = ({ title, description }) => {
   const errors = {};
   const cleanTitle = title.trim();
@@ -235,11 +256,21 @@ const validateTopic = ({ title, description }) => {
 const openTopicDialog = (topic = null) => {
   topicForm.reset();
   alertBox().hidden = true;
-  ['title', 'description'].forEach((name) => setFieldError(name, ''));
+  ['title', 'description', 'file'].forEach((name) => setFieldError(name, ''));
 
   topicForm.elements.id.value = topic?.id ?? '';
   topicForm.elements.title.value = topic?.title ?? '';
   topicForm.elements.description.value = topic?.description ?? '';
+
+  // The proposal file is required for a new topic and after a revision request
+  const fileRequired = !topic || topic.status === 'For Revision';
+  topicForm.elements.file.accept = limits.allowed_ext.map((ext) => `.${ext}`).join(',');
+  document.getElementById('topic-file-label').textContent = fileRequired ? 'Proposal file (required)' : 'Replace the proposal file (optional)';
+  topicForm.querySelector('[data-file-hint]').textContent = !topic
+    ? `${typesText()}, up to ${formatBytes(limits.max_size)}.`
+    : fileRequired
+      ? `Send the revised file. It replaces ${topic.file?.name ?? 'the previous file'}.`
+      : `Leave this empty to keep ${topic.file?.name ?? 'the current file'}.`;
 
   document.getElementById('topic-dialog-title').textContent = topic ? 'Edit your topic' : 'Propose a topic';
   topicForm.querySelector('[data-submit]').textContent = topic ? 'Save and resubmit' : 'Submit for review';
@@ -254,13 +285,27 @@ topicForm.addEventListener('input', ({ target }) => {
   updateCounters();
 });
 
+topicForm.elements.file.addEventListener('change', () => {
+  const chosen = topicForm.elements.file.files[0];
+  setFieldError('file', chosen ? checkFile(chosen, false) : '');
+});
+
 topicForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   alertBox().hidden = true;
 
-  const payload = Object.fromEntries(new FormData(topicForm));
+  const payload = {
+    id: topicForm.elements.id.value,
+    title: topicForm.elements.title.value,
+    description: topicForm.elements.description.value,
+  };
+  const chosen = topicForm.elements.file.files[0];
+  const fileRequired = payload.id === '' || overview.topic?.status === 'For Revision';
+
   const errors = validateTopic(payload);
-  ['title', 'description'].forEach((name) => setFieldError(name, errors[name] ?? ''));
+  const fileProblem = checkFile(chosen, fileRequired);
+  if (fileProblem) errors.file = fileProblem;
+  ['title', 'description', 'file'].forEach((name) => setFieldError(name, errors[name] ?? ''));
 
   if (Object.keys(errors).length > 0) {
     topicForm.elements[Object.keys(errors)[0]].focus();
@@ -274,7 +319,13 @@ topicForm.addEventListener('submit', async (event) => {
   submit.textContent = 'Saving…';
 
   try {
-    const { response, data } = await postJson(editing ? 'topic-update.php' : 'topic-create.php', payload);
+    const body = new FormData();
+    if (editing) body.append('id', payload.id);
+    body.append('title', payload.title);
+    body.append('description', payload.description);
+    if (chosen) body.append('file', chosen);
+
+    const { response, data } = await postForm(editing ? 'topic-update.php' : 'topic-create.php', body);
 
     if (response.status === 401) return goToLogin();
 

@@ -15,7 +15,6 @@ const form = document.getElementById('upload-form');
 const confirmDialog = document.getElementById('confirm-dialog');
 
 let files = [];
-let milestones = [];
 let limits = { max_size: 5 * 1024 * 1024, allowed_ext: ['pdf', 'docx'] };
 let hasGroup = false;
 let pendingDeleteId = null;
@@ -30,13 +29,14 @@ const message = (title, text, button = '') => html`<article class="card"><div cl
 
 const fileRow = (file) => html`<tr>
   <td data-label="File"><span class="file-name">${file.name}</span></td>
-  <td data-label="Milestone">${file.milestone_name ?? html`<span class="meta-inline">None</span>`}</td>
+  <td data-label="Source">${file.source.label}</td>
   <td data-label="Uploaded by">${file.uploader}</td>
   <td data-label="Date">${formatDate(file.uploaded_at)}</td>
   <td data-label="Size">${formatBytes(file.size)}</td>
   <td data-label="Actions">
     <div class="row-actions">
       <a class="btn btn-quiet btn-sm" href="${baseUrl}/api/file-download.php?id=${file.id}">Download</a>
+      ${!file.can_delete && file.source.type !== 'direct' ? html`<span class="meta-inline">Replaced when you resubmit</span>` : ''}
       ${file.can_delete ? html`<button type="button" class="btn btn-quiet btn-sm" data-action="delete" data-id="${file.id}" data-name="${file.name}">Delete</button>` : ''}
     </div>
   </td>
@@ -61,7 +61,7 @@ const render = () => {
   }
 
   const query = searchBox.value.trim().toLowerCase();
-  const shown = files.filter((file) => [file.name, file.milestone_name ?? '', file.uploader].join(' ').toLowerCase().includes(query));
+  const shown = files.filter((file) => [file.name, file.source.label, file.uploader].join(' ').toLowerCase().includes(query));
 
   mount(
     app,
@@ -70,7 +70,7 @@ const render = () => {
           <p class="result-count" role="status">${shown.length} of ${files.length} files</p>
           <table class="table">
             <thead>
-              <tr><th scope="col">File</th><th scope="col">Milestone</th><th scope="col">Uploaded by</th><th scope="col">Date</th><th scope="col">Size</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
+              <tr><th scope="col">File</th><th scope="col">Source</th><th scope="col">Uploaded by</th><th scope="col">Date</th><th scope="col">Size</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
             </thead>
             <tbody>${shown.map(fileRow)}</tbody>
           </table>
@@ -95,7 +95,6 @@ const load = async () => {
 
     hasGroup = Boolean(data.group);
     files = data.files;
-    milestones = data.milestones;
     limits = data.limits;
     render();
   } catch (error) {
@@ -134,11 +133,6 @@ const openUpload = () => {
     `${limits.allowed_ext.map((ext) => ext.toUpperCase()).join(' or ')} files, up to ${formatBytes(limits.max_size)}.`;
   form.elements.file.accept = limits.allowed_ext.map((ext) => `.${ext}`).join(',');
 
-  mount(
-    form.querySelector('[data-milestone-options]'),
-    html`<option value="">None</option>${milestones.map((milestone) => html`<option value="${milestone.id}">${milestone.name}</option>`)}`
-  );
-
   dialog.showModal();
   form.elements.file.focus();
 };
@@ -163,7 +157,6 @@ form.addEventListener('submit', async (event) => {
 
   const data = new FormData();
   data.append('file', chosen);
-  if (form.elements.milestone_id.value) data.append('milestone_id', form.elements.milestone_id.value);
 
   const submit = form.querySelector('[data-submit]');
   submit.disabled = true;

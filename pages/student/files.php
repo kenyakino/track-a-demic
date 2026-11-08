@@ -19,14 +19,14 @@ $csrf = csrf_token();
     <div class="page-head">
       <div>
         <h1>Files</h1>
-        <p class="lead">Upload your drafts so your adviser can read them.</p>
+        <p class="lead">Every file your group sends is listed here, including the ones sent with a topic or a milestone.</p>
       </div>
       <button type="button" class="btn btn-primary" data-action="upload" hidden>Upload file</button>
     </div>
 
     <div class="toolbar" data-toolbar hidden>
       <label class="sr-only" for="search">Search files</label>
-      <input id="search" class="control search" type="search" placeholder="Search by file name or milestone" autocomplete="off">
+      <input id="search" class="control search" type="search" placeholder="Search by file name or source" autocomplete="off">
     </div>
 
     <div id="app" aria-live="polite" aria-busy="true">
@@ -49,11 +49,6 @@ $csrf = csrf_token();
         <label for="file-input">File</label>
         <input id="file-input" name="file" type="file" accept=".pdf,.docx" aria-describedby="file-error">
         <p class="field-error" id="file-error" data-error-for="file"></p>
-      </div>
-
-      <div class="field">
-        <label for="file-milestone">Related milestone <span class="meta-inline">(optional)</span></label>
-        <select id="file-milestone" name="milestone_id" class="control" data-milestone-options></select>
       </div>
 
       <div class="dialog-actions">

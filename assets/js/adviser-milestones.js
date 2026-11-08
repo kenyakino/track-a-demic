@@ -4,7 +4,7 @@
  */
 
 import { getJson, postJson, goToLogin, baseUrl } from './api.js';
-import { html, mount, formatDate, toast } from './ui.js';
+import { html, mount, formatDate, formatBytes, toast } from './ui.js';
 import { milestoneBadge } from './labels.js';
 
 const app = document.getElementById('app');
@@ -36,6 +36,9 @@ const assignmentRow = (assignment) => html`<li>
   </div>
   ${assignment.comments.length
     ? html`<ul class="note-list">${assignment.comments.map((note) => html`<li><span class="meta-inline">${formatDate(note.created_at)}:</span> ${note.text}</li>`)}</ul>`
+    : ''}
+  ${assignment.submission_file
+    ? html`<p class="meta">Submitted file: <a href="${baseUrl}/api/file-download.php?id=${assignment.submission_file.id}">${assignment.submission_file.name}</a> (${formatBytes(assignment.submission_file.size)})</p>`
     : ''}
   ${assignment.actions.length
     ? html`<div class="assignment-actions">

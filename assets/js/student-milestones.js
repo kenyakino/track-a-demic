@@ -3,11 +3,16 @@
  * submit for review, and read the adviser's notes.
  */
 
-import { getJson, postJson, goToLogin } from './api.js';
-import { html, mount, formatDate, toast } from './ui.js';
+import { getJson, postJson, postForm, goToLogin, baseUrl } from './api.js';
+import { html, mount, formatDate, formatBytes, toast } from './ui.js';
 import { milestoneBadge } from './labels.js';
 
 const app = document.getElementById('app');
+const submitDialog = document.getElementById('submit-dialog');
+const submitForm = document.getElementById('submit-form');
+
+let limits = { max_size: 5 * 1024 * 1024, allowed_ext: ['pdf', 'docx'] };
+let current = [];
 
 const ACTIONS = {
   start: { label: 'Start working', cls: 'btn-primary' },
@@ -48,6 +53,9 @@ const milestoneCard = (milestone) => html`<li class="card milestone-card ${miles
     ${milestone.is_overdue ? html` <strong class="overdue">Overdue</strong>` : ''}
   </p>
   <p class="status-help">${HELP[milestone.status] ?? ''}</p>
+  ${milestone.submission_file
+    ? html`<p class="meta">Submitted file: <a href="${baseUrl}/api/file-download.php?id=${milestone.submission_file.id}">${milestone.submission_file.name}</a> (${formatBytes(milestone.submission_file.size)})</p>`
+    : ''}
   ${notesBlock(milestone)}
   ${milestone.actions.length
     ? html`<div class="card-actions">
@@ -105,6 +113,8 @@ const load = async () => {
       return;
     }
 
+    limits = data.limits ?? limits;
+    current = data.milestones;
     render(data);
   } catch (error) {
     mount(app, message('Could not load your milestones', 'Could not reach the server. Check your connection and try again.', true));
@@ -118,6 +128,7 @@ app.addEventListener('click', async ({ target }) => {
   if (!button) return;
 
   if (button.dataset.action === 'retry') return load();
+  if (button.dataset.action === 'submit') return openSubmit(Number(button.dataset.id));
 
   button.disabled = true;
 
@@ -135,5 +146,98 @@ app.addEventListener('click', async ({ target }) => {
     button.disabled = false;
   }
 });
+
+/* ---------- Submit with a file ---------- */
+
+const typesText = () => limits.allowed_ext.map((ext) => ext.toUpperCase()).join(' or ');
+
+const setFileError = (text) => {
+  submitForm.querySelector('[data-error-for="file"]').textContent = text;
+  submitForm.elements.file.setAttribute('aria-invalid', text ? 'true' : 'false');
+};
+
+const checkFile = (file) => {
+  if (!file) return 'Choose the file your adviser should check.';
+
+  const extension = file.name.split('.').pop().toLowerCase();
+  if (!limits.allowed_ext.includes(extension)) return `Only ${typesText()} files are allowed.`;
+  if (file.size === 0) return 'The file is empty.';
+  if (file.size > limits.max_size) return `The file is too large. The limit is ${formatBytes(limits.max_size)}.`;
+  return '';
+};
+
+const openSubmit = (id) => {
+  const milestone = current.find((item) => item.id === id);
+
+  submitForm.reset();
+  submitForm.querySelector('[data-alert]').hidden = true;
+  setFileError('');
+  submitForm.elements.id.value = id;
+  submitForm.elements.file.accept = limits.allowed_ext.map((ext) => `.${ext}`).join(',');
+
+  document.getElementById('submit-subtitle').textContent = milestone ? milestone.name : '';
+  document.getElementById('submit-hint').textContent =
+    `${typesText()}, up to ${formatBytes(limits.max_size)}.` +
+    (milestone?.submission_file ? ` It replaces ${milestone.submission_file.name}.` : '');
+
+  submitDialog.showModal();
+  submitForm.elements.file.focus();
+};
+
+submitForm.elements.file.addEventListener('change', () => {
+  const chosen = submitForm.elements.file.files[0];
+  setFileError(chosen ? checkFile(chosen) : '');
+});
+
+submitForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const alertBox = submitForm.querySelector('[data-alert]');
+  alertBox.hidden = true;
+
+  const chosen = submitForm.elements.file.files[0];
+  const problem = checkFile(chosen);
+  setFileError(problem);
+  if (problem) {
+    submitForm.elements.file.focus();
+    return;
+  }
+
+  const body = new FormData();
+  body.append('id', submitForm.elements.id.value);
+  body.append('file', chosen);
+
+  const submit = submitForm.querySelector('[data-submit]');
+  submit.disabled = true;
+  submit.textContent = 'Submitting…';
+
+  try {
+    const { response, data } = await postForm('milestone-submit.php', body);
+
+    if (response.status === 401) return goToLogin();
+
+    if (response.ok && data.ok) {
+      submitDialog.close();
+      toast(data.message);
+      await load();
+      return;
+    }
+
+    setFileError(data.errors?.file ?? '');
+    alertBox.textContent = data.errors?.file ? 'The milestone was not submitted.' : data.message ?? 'Something went wrong. Try again.';
+    alertBox.hidden = false;
+    if (response.status === 409) await load();
+  } catch (error) {
+    alertBox.textContent = 'Could not reach the server. Check your connection and try again.';
+    alertBox.hidden = false;
+  } finally {
+    submit.disabled = false;
+    submit.textContent = 'Submit for review';
+  }
+});
+
+submitDialog.addEventListener('click', ({ target }) => {
+  if (target === submitDialog || target.closest('[data-close]')) submitDialog.close();
+});
+
 
 load();
