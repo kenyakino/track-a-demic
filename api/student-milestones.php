@@ -12,7 +12,7 @@ $user = require_role_api('student');
 $membership = student_membership($user['id']);
 
 if ($membership === null) {
-    json_response(['ok' => true, 'group' => null, 'milestones' => [], 'progress' => ['done' => 0, 'total' => 0]]);
+    json_response(['ok' => true, 'group' => null, 'milestones' => [], 'progress' => ['done' => 0, 'total' => 0], 'limits' => ['max_size' => upload_settings()['max_size'], 'allowed_ext' => upload_settings()['allowed_ext']]]);
 }
 
 $stmt = db()->prepare(
@@ -26,15 +26,20 @@ $stmt->execute([$membership['group_id']]);
 $rows = $stmt->fetchAll();
 
 $comments = target_comments_map('milestone', array_map(static fn (array $r): int => (int) $r['id'], $rows));
-$milestones = array_map(
-    static fn (array $row): array => milestone_state_view($row, MILESTONE_STUDENT_TRANSITIONS, $comments[(int) $row['id']] ?? []),
-    $rows
-);
+$submitted = source_files_map('milestone', array_map(static fn (array $r): int => (int) $r['id'], $rows));
+$milestones = array_map(static function (array $row) use ($comments, $submitted): array {
+    $view = milestone_state_view($row, MILESTONE_STUDENT_TRANSITIONS, $comments[(int) $row['id']] ?? []);
+    $view['submission_file'] = $submitted[(int) $row['id']] ?? null;
+    return $view;
+}, $rows);
 $done = count(array_filter($milestones, static fn (array $m): bool => $m['status'] === 'Completed'));
+
+$settings = upload_settings();
 
 json_response([
     'ok' => true,
     'group' => ['id' => $membership['group_id'], 'name' => $membership['group_name']],
+    'limits' => ['max_size' => $settings['max_size'], 'allowed_ext' => $settings['allowed_ext']],
     'milestones' => $milestones,
     'progress' => ['done' => $done, 'total' => count($milestones)],
 ]);

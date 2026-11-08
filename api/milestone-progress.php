@@ -13,6 +13,11 @@ $in = request_json();
 $id     = (int) ($in['id'] ?? 0);
 $action = (string) ($in['action'] ?? '');
 
+// Submitting needs a file, so it goes through milestone-submit.php
+if ($action === 'submit') {
+    json_response(['ok' => false, 'message' => 'Attach a file to submit this milestone.'], 422);
+}
+
 // The milestone must belong to the student's own group
 $stmt = db()->prepare(
     'SELECT gm.id, gm.status, t.name
@@ -36,15 +41,12 @@ if (!isset($allowed[$action])) {
 $update = db()->prepare('UPDATE group_milestones SET status = ? WHERE id = ?');
 $update->execute([$allowed[$action], $id]);
 
-if ($action === 'submit') {
-    add_notification($membership['adviser_id'], $membership['group_name'] . ' submitted "' . $milestone['name'] . '" for review.');
-} elseif ($action === 'withdraw') {
+if ($action === 'withdraw') {
     add_notification($membership['adviser_id'], $membership['group_name'] . ' withdrew "' . $milestone['name'] . '" from review.');
 }
 
 $messages = [
     'start'    => 'Milestone started.',
-    'submit'   => 'Submitted for review.',
     'withdraw' => 'Submission withdrawn.',
 ];
 

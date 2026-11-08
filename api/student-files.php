@@ -13,7 +13,7 @@ $membership = student_membership($user['id']);
 $settings = upload_settings();
 
 if ($membership === null) {
-    json_response(['ok' => true, 'group' => null, 'files' => [], 'milestones' => [], 'limits' => ['max_size' => $settings['max_size'], 'allowed_ext' => $settings['allowed_ext']]]);
+    json_response(['ok' => true, 'group' => null, 'files' => [], 'limits' => ['max_size' => $settings['max_size'], 'allowed_ext' => $settings['allowed_ext']]]);
 }
 
 $files = array_map(
@@ -21,15 +21,9 @@ $files = array_map(
     group_file_rows($membership['group_id'])
 );
 
-$milestones = array_map(
-    static fn (array $m): array => ['id' => $m['id'], 'name' => $m['name']],
-    group_milestone_list($membership['group_id'])
-);
-
 json_response([
     'ok' => true,
     'group' => ['id' => $membership['group_id'], 'name' => $membership['group_name']],
     'files' => $files,
-    'milestones' => $milestones,
     'limits' => ['max_size' => $settings['max_size'], 'allowed_ext' => $settings['allowed_ext']],
 ]);

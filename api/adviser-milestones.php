@@ -31,9 +31,12 @@ $assignmentRows = $asgStmt->fetchAll();
 
 $comments = target_comments_map('milestone', array_map(static fn (array $r): int => (int) $r['id'], $assignmentRows));
 
+$submitted = source_files_map('milestone', array_map(static fn (array $r): int => (int) $r['id'], $assignmentRows));
+
 $byTemplate = [];
 foreach ($assignmentRows as $row) {
     $view = milestone_state_view($row, MILESTONE_ADVISER_TRANSITIONS, $comments[(int) $row['id']] ?? []);
+    $view['submission_file'] = $submitted[(int) $row['id']] ?? null;
     $view['group_id'] = (int) $row['group_id'];
     $view['group_name'] = $row['group_name'];
     $byTemplate[(int) $row['template_id']][] = $view;

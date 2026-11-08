@@ -20,6 +20,7 @@ if ($membership === null) {
         'topic' => null,
         'previous_topics' => [],
         'milestones' => [],
+        'limits' => ['max_size' => upload_settings()['max_size'], 'allowed_ext' => upload_settings()['allowed_ext']],
     ]);
 }
 
@@ -39,7 +40,10 @@ foreach (group_topic_rows($groupId) as $row) {
 
 if ($topic !== null) {
     $topic['comments'] = topic_comments_map([$topic['id']])[$topic['id']] ?? [];
+    $topic['file'] = source_files_map('topic', [$topic['id']])[$topic['id']] ?? null;
 }
+
+$settings = upload_settings();
 
 json_response([
     'ok' => true,
@@ -54,4 +58,5 @@ json_response([
     'topic' => $topic,
     'previous_topics' => $previous,
     'milestones' => group_milestone_list($groupId),
+    'limits' => ['max_size' => $settings['max_size'], 'allowed_ext' => $settings['allowed_ext']],
 ]);
