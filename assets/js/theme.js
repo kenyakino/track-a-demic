@@ -18,8 +18,10 @@ const saveTheme = (theme) => {
   }
 };
 
+// The switch is "on" while dark mode is active
 const syncButtons = () => {
-  buttons.forEach((button) => button.setAttribute('aria-label', `Switch to ${otherTheme()} mode`));
+  const dark = currentTheme() === 'dark';
+  buttons.forEach((button) => button.setAttribute('aria-checked', String(dark)));
 };
 
 buttons.forEach((button) =>

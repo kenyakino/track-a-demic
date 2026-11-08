@@ -142,10 +142,53 @@ a:hover { color: var(--ink); }
 
 .icon-btn:hover { background: var(--surface-2); }
 
-/* Show the moon in light mode and the sun in dark mode */
-.theme-toggle .icon-sun { display: none; }
-:root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
-:root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+/* Dark mode switch: the round knob slides right in dark mode and shows a sun or a moon */
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.theme-switch-track {
+  position: relative;
+  display: block;
+  width: 3rem;
+  height: 1.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-switch-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0.2rem;
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: -0.675rem;
+  color: var(--brand-ink);
+  background: var(--brand);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.switch-moon { display: none; }
+:root[data-theme="dark"] .switch-sun { display: none; }
+:root[data-theme="dark"] .switch-moon { display: block; }
+:root[data-theme="dark"] .theme-switch-thumb { transform: translateX(1.25rem); }
+:root[data-theme="dark"] .theme-switch-track { background: var(--secondary-soft); border-color: var(--secondary); }
 
 /* ---------- Buttons ---------- */
 
@@ -1093,6 +1136,6 @@ body.sidebar-open .sidebar { visibility: visible; transform: none; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .btn, .sidebar, .app-shell, .sidebar-collapse svg { transition: none; }
+  .btn, .sidebar, .app-shell, .sidebar-collapse svg, .theme-switch-track, .theme-switch-thumb { transition: none; }
   .skeleton { animation: none; }
 }
