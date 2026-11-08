@@ -8,10 +8,18 @@ require_post();
 verify_csrf();
 
 [$user, $membership] = require_student_group();
-[$title, $description, $errors] = validate_topic_input(request_json());
+
+// The form is sent as multipart (title, description, and the proposal file)
+[$title, $description, $errors] = validate_topic_input($_POST);
+$checked = check_uploaded_file($_FILES['file'] ?? null, true);
+
+if (!$checked['ok']) {
+    $errors['file'] = $checked['message'];
+}
 
 if ($errors !== []) {
-    json_response(['ok' => false, 'message' => 'Please fix the highlighted fields.', 'errors' => $errors], 422);
+    $onlyFile = count($errors) === 1 && isset($errors['file']) && !$checked['ok'];
+    json_response(['ok' => false, 'message' => 'Please fix the highlighted fields.', 'errors' => $errors], $onlyFile ? $checked['status'] : 422);
 }
 
 // One active topic per group. A rejected topic does not count.
@@ -21,9 +29,29 @@ if ((int) $count->fetchColumn() > 0) {
     json_response(['ok' => false, 'message' => 'Your group already has a topic. Edit it instead.'], 409);
 }
 
-$insert = db()->prepare('INSERT INTO topics (group_id, title, description) VALUES (?, ?, ?)');
-$insert->execute([$membership['group_id'], $title, $description]);
-$topicId = (int) db()->lastInsertId();
+$stored = store_checked_upload($checked);
+if ($stored === null) {
+    json_response(['ok' => false, 'message' => 'The server could not save the file. Try again.'], 500);
+}
+
+try {
+    db()->beginTransaction();
+
+    $insert = db()->prepare('INSERT INTO topics (group_id, title, description) VALUES (?, ?, ?)');
+    $insert->execute([$membership['group_id'], $title, $description]);
+    $topicId = (int) db()->lastInsertId();
+
+    record_file($membership['group_id'], $user['id'], $checked['name'], $stored, $checked['size'], 'topic', $topicId);
+
+    db()->commit();
+} catch (PDOException $e) {
+    if (db()->inTransaction()) {
+        db()->rollBack();
+    }
+    unlink_stored_files(['uploads/' . $stored]);
+    error_log('Topic create failed: ' . $e->getMessage());
+    json_response(['ok' => false, 'message' => 'Could not submit the topic. Try again.'], 500);
+}
 
 add_notification($membership['adviser_id'], $membership['group_name'] . ' submitted a new topic proposal.');
 

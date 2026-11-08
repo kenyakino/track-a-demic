@@ -9,8 +9,7 @@ verify_csrf();
 
 [$user, $membership] = require_student_group();
 
-$input = request_json();
-$topicId = (int) ($input['id'] ?? 0);
+$topicId = (int) ($_POST['id'] ?? 0);
 
 // The topic must belong to the student's own group
 $stmt = db()->prepare(
@@ -31,15 +30,57 @@ if (!in_array($topic['status'], TOPIC_EDITABLE_STATUSES, true)) {
     ], 409);
 }
 
-[$title, $description, $errors] = validate_topic_input($input);
+[$title, $description, $errors] = validate_topic_input($_POST);
 
-if ($errors !== []) {
-    json_response(['ok' => false, 'message' => 'Please fix the highlighted fields.', 'errors' => $errors], 422);
+// After a revision request a new file is required. While the topic still waits for review it is optional.
+$fileRequired = $topic['status'] === 'For Revision';
+$checked = check_uploaded_file($_FILES['file'] ?? null, $fileRequired);
+
+if (!$checked['ok']) {
+    $errors['file'] = $checked['message'];
 }
 
-// Saving a topic sends it back to the adviser for review
-$update = db()->prepare("UPDATE topics SET title = ?, description = ?, status = 'Proposed' WHERE id = ? AND group_id = ?");
-$update->execute([$title, $description, $topicId, $membership['group_id']]);
+if ($errors !== []) {
+    $onlyFile = count($errors) === 1 && isset($errors['file']) && !$checked['ok'];
+    json_response(['ok' => false, 'message' => 'Please fix the highlighted fields.', 'errors' => $errors], $onlyFile ? $checked['status'] : 422);
+}
+
+$newStored = null;
+$oldFiles = [];
+
+if (!$checked['skipped']) {
+    $newStored = store_checked_upload($checked);
+    if ($newStored === null) {
+        json_response(['ok' => false, 'message' => 'The server could not save the file. Try again.'], 500);
+    }
+    $oldFiles = source_file_rows('topic', $topicId);
+}
+
+try {
+    db()->beginTransaction();
+
+    // Saving a topic sends it back to the adviser for review
+    $update = db()->prepare("UPDATE topics SET title = ?, description = ?, status = 'Proposed' WHERE id = ? AND group_id = ?");
+    $update->execute([$title, $description, $topicId, $membership['group_id']]);
+
+    if ($newStored !== null) {
+        record_file($membership['group_id'], $user['id'], $checked['name'], $newStored, $checked['size'], 'topic', $topicId);
+        delete_file_rows($oldFiles);   // the previous proposal file is replaced
+    }
+
+    db()->commit();
+} catch (PDOException $e) {
+    if (db()->inTransaction()) {
+        db()->rollBack();
+    }
+    if ($newStored !== null) {
+        unlink_stored_files(['uploads/' . $newStored]);
+    }
+    error_log('Topic update failed: ' . $e->getMessage());
+    json_response(['ok' => false, 'message' => 'Could not save the topic. Try again.'], 500);
+}
+
+unlink_stored_files(array_column($oldFiles, 'file_path'));
 
 $verb = $topic['status'] === 'For Revision' ? 'resubmitted their topic after revision.' : 'updated their topic proposal.';
 add_notification($membership['adviser_id'], $membership['group_name'] . ' ' . $verb);

@@ -30,8 +30,13 @@ if (!in_array($topic['status'], TOPIC_EDITABLE_STATUSES, true)) {
     ], 409);
 }
 
+// The topic's proposal file is removed with it
+$oldFiles = source_file_rows('topic', $topicId);
+
 $delete = db()->prepare('DELETE FROM topics WHERE id = ? AND group_id = ?');
 $delete->execute([$topicId, $membership['group_id']]);
+
+unlink_stored_files(array_column($oldFiles, 'file_path'));
 
 add_notification($membership['adviser_id'], $membership['group_name'] . ' withdrew their topic proposal.');
 

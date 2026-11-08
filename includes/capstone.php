@@ -643,16 +643,17 @@ function detect_upload_type(string $path, string $extension): ?string
     return null;
 }
 
-/** Files of a group with who uploaded them and the milestone they belong to. */
+/** Files of a group with who uploaded them and where each one came from. */
 function group_file_rows(int $groupId): array
 {
     $stmt = db()->prepare(
         'SELECT f.id, f.file_name, f.file_size, f.uploaded_at, f.uploaded_by, u.full_name AS uploader,
-                f.milestone_id, t.name AS milestone_name
+                f.source_type, f.milestone_id, t.name AS milestone_name, tp.title AS topic_title
            FROM files f
            JOIN users u ON u.id = f.uploaded_by
            LEFT JOIN group_milestones gm ON gm.id = f.milestone_id
            LEFT JOIN milestone_templates t ON t.id = gm.template_id
+           LEFT JOIN topics tp ON tp.id = f.topic_id
           WHERE f.group_id = ?
           ORDER BY f.id DESC'
     );
@@ -660,15 +661,175 @@ function group_file_rows(int $groupId): array
     return $stmt->fetchAll();
 }
 
+/** Where a file came from, in words. */
+function file_source_label(array $row): string
+{
+    switch ($row['source_type']) {
+        case 'topic':
+            return 'Topic proposal' . ($row['topic_title'] ? ': ' . $row['topic_title'] : '');
+        case 'milestone':
+            return 'Milestone' . ($row['milestone_name'] ? ': ' . $row['milestone_name'] : '');
+        default:
+            return 'Direct upload';
+    }
+}
+
+/**
+ * Shapes a file for the API. Only files uploaded on the Files page ("direct")
+ * can be deleted by hand; the others are replaced when the group resubmits.
+ */
 function file_view(array $row, int $viewerId, bool $viewerIsLeader): array
 {
+    $isDirect = $row['source_type'] === 'direct';
+
     return [
-        'id'             => (int) $row['id'],
-        'name'           => $row['file_name'],
-        'size'           => (int) $row['file_size'],
-        'uploaded_at'    => $row['uploaded_at'],
-        'uploader'       => $row['uploader'],
-        'milestone_name' => $row['milestone_name'],
-        'can_delete'     => $viewerIsLeader || (int) $row['uploaded_by'] === $viewerId,
+        'id'          => (int) $row['id'],
+        'name'        => $row['file_name'],
+        'size'        => (int) $row['file_size'],
+        'uploaded_at' => $row['uploaded_at'],
+        'uploader'    => $row['uploader'],
+        'source'      => ['type' => $row['source_type'], 'label' => file_source_label($row)],
+        'can_delete'  => $isDirect && ($viewerIsLeader || (int) $row['uploaded_by'] === $viewerId),
     ];
+}
+
+/* ------------------------------------------------------------
+ * Receiving uploads (used by every endpoint that takes a file)
+ * ---------------------------------------------------------- */
+
+/**
+ * Checks one uploaded file from $_FILES.
+ * Returns ['ok' => true, 'skipped' => false, 'name', 'ext', 'size', 'tmp'] for a good file,
+ * ['ok' => true, 'skipped' => true] when no file was sent and none is required,
+ * or ['ok' => false, 'message', 'status'] with the reason.
+ */
+function check_uploaded_file(?array $file, bool $required = true): array
+{
+    $settings = upload_settings();
+    $limitText = round($settings['max_size'] / 1048576, 1) . ' MB';
+    $allowedText = strtoupper(implode(' or ', $settings['allowed_ext']));
+    $fail = static fn (string $message, int $status = 422): array => ['ok' => false, 'message' => $message, 'status' => $status];
+
+    // When a request is bigger than the server allows, PHP drops the whole upload
+    $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+    if ($_FILES === [] && $contentLength > ini_bytes((string) ini_get('post_max_size'))) {
+        return $fail('The file is too large. The limit is ' . $limitText . '.', 413);
+    }
+
+    if ($file === null || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return $required ? $fail('Choose a file to upload.') : ['ok' => true, 'skipped' => true];
+    }
+
+    switch ($file['error']) {
+        case UPLOAD_ERR_OK:
+            break;
+        case UPLOAD_ERR_INI_SIZE:
+        case UPLOAD_ERR_FORM_SIZE:
+            return $fail('The file is too large. The limit is ' . $limitText . '.', 413);
+        default:
+            error_log('Upload error code ' . $file['error']);
+            return $fail('The upload failed. Try again.', 500);
+    }
+
+    $size = (int) $file['size'];
+    if ($size <= 0) {
+        return $fail('The file is empty.');
+    }
+    if ($size > $settings['max_size']) {
+        return $fail('The file is too large. The limit is ' . $limitText . '.', 413);
+    }
+
+    $name = clean_upload_name((string) $file['name']);
+    $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+
+    if (!in_array($extension, $settings['allowed_ext'], true) || !isset(UPLOAD_TYPES[$extension])) {
+        return $fail('Only ' . $allowedText . ' files are allowed.');
+    }
+
+    if (!is_uploaded_file($file['tmp_name'])) {
+        return $fail('Invalid upload.', 400);
+    }
+
+    // Look inside the file: its content must match what the extension claims
+    if (detect_upload_type($file['tmp_name'], $extension) === null) {
+        return $fail('This file does not look like a real ' . strtoupper($extension) . ' file.');
+    }
+
+    return ['ok' => true, 'skipped' => false, 'name' => $name, 'ext' => $extension, 'size' => $size, 'tmp' => $file['tmp_name']];
+}
+
+/** Moves a checked upload into uploads/ under a random name. Returns that name, or null. */
+function store_checked_upload(array $checked): ?string
+{
+    $settings = upload_settings();
+    $stored = bin2hex(random_bytes(16)) . '.' . $checked['ext'];
+
+    if (!move_uploaded_file($checked['tmp'], $settings['dir'] . DIRECTORY_SEPARATOR . $stored)) {
+        error_log('Could not move the uploaded file into ' . $settings['dir']);
+        return null;
+    }
+
+    return $stored;
+}
+
+/** Removes stored files from the disk (the paths as saved in the files table). */
+function unlink_stored_files(array $paths): void
+{
+    $dir = upload_settings()['dir'];
+
+    foreach ($paths as $path) {
+        $full = $dir . DIRECTORY_SEPARATOR . basename((string) $path);
+        if (is_file($full)) {
+            @unlink($full);
+        }
+    }
+}
+
+/** Saves a files row. Returns its id. */
+function record_file(int $groupId, int $uploaderId, string $name, string $storedName, int $size, string $sourceType, ?int $topicId = null, ?int $milestoneId = null): int
+{
+    $insert = db()->prepare(
+        'INSERT INTO files (group_id, source_type, topic_id, milestone_id, file_name, file_path, file_size, uploaded_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    $insert->execute([$groupId, $sourceType, $topicId, $milestoneId, $name, 'uploads/' . $storedName, $size, $uploaderId]);
+
+    return (int) db()->lastInsertId();
+}
+
+/** The files attached to one topic ('topic') or one milestone submission ('milestone'). */
+function source_file_rows(string $sourceType, int $ownerId): array
+{
+    $column = $sourceType === 'topic' ? 'topic_id' : 'milestone_id';
+    $stmt = db()->prepare("SELECT id, file_path FROM files WHERE source_type = ? AND $column = ?");
+    $stmt->execute([$sourceType, $ownerId]);
+    return $stmt->fetchAll();
+}
+
+/** Deletes the given files rows (call unlink_stored_files for the disk copies). */
+function delete_file_rows(array $rows): void
+{
+    $delete = db()->prepare('DELETE FROM files WHERE id = ?');
+    foreach ($rows as $row) {
+        $delete->execute([(int) $row['id']]);
+    }
+}
+
+/** The newest file of each topic or milestone submission: owner id => [id, name, size]. */
+function source_files_map(string $sourceType, array $ownerIds): array
+{
+    if ($ownerIds === []) {
+        return [];
+    }
+
+    $column = $sourceType === 'topic' ? 'topic_id' : 'milestone_id';
+    $marks = implode(',', array_fill(0, count($ownerIds), '?'));
+    $stmt = db()->prepare("SELECT id, file_name, file_size, $column AS owner_id FROM files WHERE source_type = ? AND $column IN ($marks) ORDER BY id");
+    $stmt->execute(array_merge([$sourceType], array_values($ownerIds)));
+
+    $map = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $map[(int) $row['owner_id']] = ['id' => (int) $row['id'], 'name' => $row['file_name'], 'size' => (int) $row['file_size']];
+    }
+    return $map;
 }

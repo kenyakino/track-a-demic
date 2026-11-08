@@ -10,12 +10,17 @@ verify_csrf();
 [$user, $membership] = require_student_group();
 $fileId = (int) (request_json()['id'] ?? 0);
 
-$stmt = db()->prepare('SELECT id, file_path, uploaded_by FROM files WHERE id = ? AND group_id = ? LIMIT 1');
+$stmt = db()->prepare('SELECT id, file_path, uploaded_by, source_type FROM files WHERE id = ? AND group_id = ? LIMIT 1');
 $stmt->execute([$fileId, $membership['group_id']]);
 $file = $stmt->fetch();
 
 if (!$file) {
     json_response(['ok' => false, 'message' => 'File not found.'], 404);
+}
+
+// Proposal and milestone files are replaced when the group resubmits
+if ($file['source_type'] !== 'direct') {
+    json_response(['ok' => false, 'message' => 'This file belongs to a topic or a milestone submission. It is replaced when you resubmit.'], 409);
 }
 
 // The person who uploaded a file, or the group leader, can delete it
