@@ -13,6 +13,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 CREATE TABLE IF NOT EXISTS users (
   id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
   full_name     VARCHAR(100) NOT NULL,
+  title         VARCHAR(30) NULL,
   email         VARCHAR(150) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   role          ENUM('student','adviser') NOT NULL DEFAULT 'student',

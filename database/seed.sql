@@ -10,13 +10,13 @@
 SET NAMES utf8mb4;
 
 -- Users: 2 advisers, 4 students
-INSERT INTO users (id, full_name, email, password_hash, role) VALUES
-(1, 'Dr. Maria Santos',   'adviser1@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'adviser'),
-(2, 'Prof. Jose Reyes',   'adviser2@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'adviser'),
-(3, 'Juan Dela Cruz',     'student1@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
-(4, 'Ana Lopez',          'student2@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
-(5, 'Mark Villanueva',    'student3@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
-(6, 'Sofia Ramos',        'student4@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student');
+INSERT INTO users (id, full_name, title, email, password_hash, role) VALUES
+(1, 'Maria Santos', 'Dr.', 'adviser1@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'adviser'),
+(2, 'Jose Reyes', 'Prof.', 'adviser2@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'adviser'),
+(3, 'Juan Dela Cruz', NULL, 'student1@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
+(4, 'Ana Lopez', NULL, 'student2@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
+(5, 'Mark Villanueva', NULL, 'student3@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
+(6, 'Sofia Ramos', NULL, 'student4@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student');
 
 -- One group created by Dr. Santos, with three members (Juan is the leader)
 INSERT INTO capstone_groups (id, group_name, adviser_id) VALUES
