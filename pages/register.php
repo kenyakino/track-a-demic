@@ -45,6 +45,17 @@ require __DIR__ . '/../includes/auth_header.php';
         </fieldset>
 
         <div class="field" data-adviser-field hidden>
+          <label for="title">Academic title <span class="meta-inline">(optional)</span></label>
+          <input id="title" name="title" type="text" list="title-options" maxlength="30" autocomplete="honorific-prefix" aria-describedby="title-hint title-error">
+          <datalist id="title-options">
+            <option value="Prof."></option><option value="Dr."></option><option value="Engr."></option>
+            <option value="Atty."></option><option value="Mr."></option><option value="Ms."></option><option value="Mrs."></option>
+          </datalist>
+          <p class="hint" id="title-hint">Shown before your name, for example Prof., Dr., or Engr.</p>
+          <p class="field-error" id="title-error" data-error-for="title"></p>
+        </div>
+
+        <div class="field" data-adviser-field hidden>
           <label for="adviser_code">Adviser code</label>
           <input id="adviser_code" name="adviser_code" type="text" autocomplete="off" aria-describedby="adviser_code-error adviser_code-hint">
           <p class="hint" id="adviser_code-hint">Ask your program head for the adviser code.</p>

@@ -26,13 +26,17 @@ const validators = {
     return '';
   },
   confirm_password: (value, form) => (value === form.elements.password.value ? '' : 'Passwords do not match.'),
+  title: (value) =>
+    value.trim() === '' || /^\p{L}[\p{L}\p{M}.\- ]{0,29}$/u.test(value.trim())
+      ? ''
+      : 'Use letters only, up to 30 characters, for example Prof., Dr., or Engr.',
   adviser_code: (value, form) =>
     form.elements.role?.value === 'adviser' && !value.trim() ? 'Enter the adviser code.' : '',
 };
 
 const fieldsByForm = {
   login: ['email', 'password'],
-  register: ['full_name', 'email', 'adviser_code', 'password', 'confirm_password'],
+  register: ['full_name', 'email', 'title', 'adviser_code', 'password', 'confirm_password'],
 };
 
 const setError = (form, name, message) => {
@@ -174,13 +178,15 @@ const initForm = (form) => {
     if (name === 'password') updateMeter(form);
   });
 
-  // Student / adviser choice shows or hides the adviser code field
-  const adviserField = $('[data-adviser-field]', form);
+  // Student / adviser choice shows or hides the adviser-only fields (title and code)
+  const adviserFields = $$('[data-adviser-field]', form);
   $$('input[name="role"]', form).forEach((radio) =>
     radio.addEventListener('change', () => {
-      if (!adviserField) return;
-      adviserField.hidden = form.elements.role.value !== 'adviser';
+      adviserFields.forEach((field) => {
+        field.hidden = form.elements.role.value !== 'adviser';
+      });
       setError(form, 'adviser_code', '');
+      setError(form, 'title', '');
     })
   );
 

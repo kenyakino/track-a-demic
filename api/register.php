@@ -71,6 +71,17 @@ if (!in_array($role, ['student', 'adviser'], true)) {
     }
 }
 
+// Advisers may add a title that is shown before their name (students cannot)
+$userTitle = null;
+$titleText = trim(preg_replace('/\s+/u', ' ', (string) ($in['title'] ?? '')) ?? '');
+if ($role === 'adviser' && $titleText !== '') {
+    if (text_length($titleText) > 30 || !preg_match('/^\p{L}[\p{L}\p{M}.\- ]*$/u', $titleText)) {
+        $errors['title'] = 'Use letters only, up to 30 characters, for example Prof., Dr., or Engr.';
+    } else {
+        $userTitle = $titleText;
+    }
+}
+
 if ($errors !== []) {
     json_response(['ok' => false, 'message' => 'Please fix the highlighted fields.', 'errors' => $errors], 422);
 }
@@ -88,9 +99,9 @@ if ($exists->fetch()) {
 
 try {
     $insert = db()->prepare(
-        'INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)'
+        'INSERT INTO users (full_name, title, email, password_hash, role) VALUES (?, ?, ?, ?, ?)'
     );
-    $insert->execute([$fullName, $email, password_hash($password, PASSWORD_DEFAULT), $role]);
+    $insert->execute([$fullName, $userTitle, $email, password_hash($password, PASSWORD_DEFAULT), $role]);
 } catch (PDOException $e) {
     // 1062 = duplicate key: someone registered the same email at the same moment
     if (($e->errorInfo[1] ?? 0) === 1062) {

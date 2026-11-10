@@ -59,10 +59,16 @@ function require_student_group(): array
 
 function find_user_basic(int $userId): ?array
 {
-    $stmt = db()->prepare('SELECT id, full_name, email FROM users WHERE id = ? LIMIT 1');
+    $stmt = db()->prepare('SELECT id, full_name, title, email FROM users WHERE id = ? LIMIT 1');
     $stmt->execute([$userId]);
     $row = $stmt->fetch();
-    return $row ?: null;
+
+    if (!$row) {
+        return null;
+    }
+
+    $row['display_name'] = display_name($row);
+    return $row;
 }
 
 function group_members_list(int $groupId): array
@@ -262,7 +268,7 @@ function target_comments_map(string $type, array $ids): array
 
     $marks = implode(',', array_fill(0, count($ids), '?'));
     $stmt = db()->prepare(
-        "SELECT c.id, c.target_id, c.comment_text, c.created_at, u.full_name, u.role
+        "SELECT c.id, c.target_id, c.comment_text, c.created_at, u.full_name, u.title, u.role
            FROM comments c
            JOIN users u ON u.id = c.user_id
           WHERE c.target_type = ? AND c.target_id IN ($marks)
@@ -287,7 +293,7 @@ function comment_view(array $row): array
 {
     return [
         'id'         => (int) $row['id'],
-        'author'     => $row['full_name'],
+        'author'     => display_name($row),
         'role'       => $row['role'],
         'text'       => $row['comment_text'],
         'created_at' => $row['created_at'],

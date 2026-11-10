@@ -58,7 +58,7 @@ function logout_user(): void
     session_destroy();
 }
 
-/** Returns the logged-in user (id, full_name, email, role) or null. */
+/** Returns the logged-in user (id, full_name, title, display_name, email, role) or null. */
 function current_user(): ?array
 {
     start_secure_session();
@@ -68,7 +68,7 @@ function current_user(): ?array
         return null;
     }
 
-    $stmt = db()->prepare('SELECT id, full_name, email, role FROM users WHERE id = ? LIMIT 1');
+    $stmt = db()->prepare('SELECT id, full_name, title, email, role FROM users WHERE id = ? LIMIT 1');
     $stmt->execute([$id]);
     $user = $stmt->fetch();
 
@@ -78,6 +78,7 @@ function current_user(): ?array
     }
 
     $user['id'] = (int) $user['id'];
+    $user['display_name'] = display_name($user);
     return $user;
 }
 
@@ -102,6 +103,22 @@ function e(?string $value): string
 function text_length(string $value): int
 {
     return function_exists('mb_strlen') ? mb_strlen($value) : strlen($value);
+}
+
+/** A person's name as shown on screen: the academic title (if any) before the name. */
+function display_name(array $row): string
+{
+    $title = trim((string) ($row['title'] ?? ''));
+    $name = (string) ($row['full_name'] ?? '');
+
+    return $title !== '' ? $title . ' ' . $name : $name;
+}
+
+/** The password an adviser's "Reset Password" sets. It can be changed in config.php. */
+function default_reset_password(): string
+{
+    $configured = (string) (app_config()['auth']['default_reset_password'] ?? '');
+    return $configured !== '' ? $configured : 'Password123!';
 }
 
 /** Where each role lands after login. */

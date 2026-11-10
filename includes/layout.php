@@ -161,7 +161,7 @@ function layout_app_open(array $user, string $active): void
       </ul>
     </nav>
     <div class="sidebar-user">
-      <p class="sidebar-name"><?= e($user['full_name']) ?></p>
+      <p class="sidebar-name"><?= e($user['display_name'] ?? $user['full_name']) ?></p>
       <p class="sidebar-role"><?= e(ucfirst($user['role'])) ?></p>
       <div class="sidebar-actions">
         <?php layout_theme_toggle(); ?>

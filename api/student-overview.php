@@ -52,7 +52,7 @@ json_response([
         'id' => $groupId,
         'name' => $membership['group_name'],
         'is_leader' => $membership['is_leader'],
-        'adviser' => $adviser ? ['full_name' => $adviser['full_name'], 'email' => $adviser['email']] : null,
+        'adviser' => $adviser ? ['full_name' => $adviser['full_name'], 'display_name' => $adviser['display_name'], 'email' => $adviser['email']] : null,
         'members' => group_members_list($groupId),
     ],
     'topic' => $topic,

@@ -116,7 +116,7 @@ const groupCard = ({ group }) =>
     <p class="meta">
       Adviser:
       ${group.adviser
-        ? html`<strong>${group.adviser.full_name}</strong> <a href="mailto:${group.adviser.email}">${group.adviser.email}</a>`
+        ? html`<strong>${group.adviser.display_name ?? group.adviser.full_name}</strong> <a href="mailto:${group.adviser.email}">${group.adviser.email}</a>`
         : 'Not assigned'}
     </p>
     <h3 class="sub-title">Members</h3>

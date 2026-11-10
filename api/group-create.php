@@ -62,7 +62,7 @@ try {
 }
 
 foreach ($memberIds as $userId) {
-    add_notification($userId, 'You were added to ' . $name . ' by ' . $adviser['full_name'] . '.');
+    add_notification($userId, 'You were added to ' . $name . ' by ' . $adviser['display_name'] . '.');
 }
 
 json_response(['ok' => true, 'message' => 'Group created.', 'group_id' => $groupId], 201);

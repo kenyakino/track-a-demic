@@ -16,7 +16,7 @@ $csrf = csrf_token();
   <?php layout_app_open($user, 'overview'); ?>
 
   <main class="shell-main">
-    <h1>Welcome, <?= e($user['full_name']) ?></h1>
+    <h1>Welcome, <?= e($user['display_name']) ?></h1>
     <p class="lead">Your groups, topics, and deadlines at a glance.</p>
 
     <div id="app" aria-live="polite" aria-busy="true">

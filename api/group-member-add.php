@@ -36,6 +36,6 @@ try {
     json_response(['ok' => false, 'message' => 'Could not add the student. Try again.'], 500);
 }
 
-add_notification($userId, 'You were added to ' . $group['group_name'] . ' by ' . $adviser['full_name'] . '.');
+add_notification($userId, 'You were added to ' . $group['group_name'] . ' by ' . $adviser['display_name'] . '.');
 
 json_response(['ok' => true, 'message' => 'Student added to the group.']);
