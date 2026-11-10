@@ -31,4 +31,10 @@ $groups = array_map(static fn (array $row): array => [
     'members'      => group_members_list((int) $row['id']),
 ], $stmt->fetchAll());
 
-json_response(['ok' => true, 'user' => $adviser, 'groups' => $groups, 'available_students' => available_students()]);
+json_response([
+    'ok' => true,
+    'user' => $adviser,
+    'groups' => $groups,
+    'available_students' => available_students(),
+    'default_reset_password' => default_reset_password(),
+]);

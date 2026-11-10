@@ -24,6 +24,10 @@ return [
         // Advisers must enter this code when they register.
         // Change it and share it only with advisers.
         'adviser_code' => 'CHANGE-THIS-ADVISER-CODE',
+
+        // The password an adviser's "Reset Password" button gives a student.
+        // It is hashed before it is saved. Leave it out to use Password123!
+        'default_reset_password' => 'Password123!',
     ],
     'upload' => [
         'max_size'    => 5 * 1024 * 1024,     // 5 MB

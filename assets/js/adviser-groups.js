@@ -15,6 +15,7 @@ const renameForm = document.getElementById('rename-form');
 const confirmDialog = document.getElementById('confirm-dialog');
 
 let state = { groups: [], available: [] };
+let defaultPassword = 'the default password';
 let confirmCallback = null;
 
 /* ---------- Rendering ---------- */
@@ -29,6 +30,8 @@ const memberRow = (group, member) => html`<li>
       ? html`<span class="role-tag">Leader</span>`
       : html`<button type="button" class="btn-text" data-action="make-leader" data-group-id="${group.id}" data-user-id="${member.id}"
           aria-label="Make ${member.full_name} the leader of ${group.name}">Make leader</button>`}
+    <button type="button" class="btn-text" data-action="reset-password" data-user-id="${member.id}" data-name="${member.full_name}"
+      aria-label="Reset the password of ${member.full_name}">Reset password</button>
     <button type="button" class="btn-text btn-text-danger" data-action="remove-member" data-group-id="${group.id}" data-user-id="${member.id}"
       data-name="${member.full_name}" aria-label="Remove ${member.full_name} from ${group.name}">Remove</button>
   </div>
@@ -107,6 +110,7 @@ const load = async () => {
     }
 
     state = { groups: data.groups, available: data.available_students };
+    defaultPassword = data.default_reset_password ?? defaultPassword;
     render();
   } catch (error) {
     showError('Could not reach the server. Check your connection and try again.');
@@ -284,6 +288,13 @@ app.addEventListener('click', ({ target }) => {
         message: 'The group and its student list will be removed. The students stay registered and can be added to a group again.',
         confirmLabel: 'Delete group',
         onConfirm: () => act('group-delete.php', { id: groupId }),
+      }),
+    'reset-password': () =>
+      askConfirm({
+        title: `Reset ${button.dataset.name}'s password?`,
+        message: `Their password will be set to the default password: ${defaultPassword}. Tell the student in person to sign in with it. Until it is changed, anyone who knows their email and the default password can sign in as them.`,
+        confirmLabel: 'Reset password',
+        onConfirm: () => act('password-reset.php', { user_id: userId }),
       }),
     'make-leader': () => act('group-leader-set.php', { group_id: groupId, user_id: userId }),
     'remove-member': () =>
