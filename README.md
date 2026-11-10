@@ -249,6 +249,8 @@ Shared page pieces (head, logo, theme button) live in `includes/layout.php`, so 
 
 Deployment steps will be added once the system is complete.
 
+<img width="1302" height="860" alt="image" src="https://github.com/user-attachments/assets/96cf08fa-38db-446e-8771-cd9221a5523c" />
+
 ## Commit Message Convention
 
 Commit messages are short, start with a verb, and describe what the commit does, for example:
