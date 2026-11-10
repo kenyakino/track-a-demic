@@ -106,6 +106,7 @@ Fresh installs use `schema.sql` and already have everything. If you created your
 | Migration | What it adds |
 |---|---|
 | `001-file-sources.sql` | Where each file came from (`source_type`, `topic_id` on the `files` table) |
+| `002-user-title.sql` | Academic title for advisers (`title` on the `users` table) |
 
 ## Authentication
 
@@ -171,6 +172,15 @@ Share the code only with advisers. The default placeholder code is rejected when
 | `api/file-download.php` | Download a file after a permission check (GET) |
 | `api/adviser-library.php` | References and files of the adviser's groups (GET) |
 | `api/milestone-submit.php` | Submit a milestone with a file (POST, multipart) |
+| `api/password-reset.php` | Adviser resets one of their students' passwords to the default (POST) |
+
+**Academic titles:** when an adviser registers, an optional *Academic title* field (for example Prof., Dr., or Engr.) is shown. The title is saved in `users.title` and displayed before the adviser's name on the dashboard, the side navigation, and wherever students see their adviser. Students cannot set a title.
+
+**Forgotten passwords:** there is no email reset, because free hosting does not reliably send email. Instead:
+- The login page tells users to contact their adviser.
+- On the **Groups** page, an adviser sees a **Reset Password** button next to each student. It asks for confirmation, then sets that student's password to the default (`Password123!`, or `default_reset_password` in `config/config.php`). The default is hashed with `password_hash()` before it is saved, and an adviser can only reset students in their own groups.
+- The adviser tells the student the default password in person. Change `default_reset_password` in the live `config.php` to something less guessable than the sample password in this README.
+- Advisers who forget their password must ask whoever runs the site, who can set a new hash in phpMyAdmin: generate it with `php -r "echo password_hash('NewPassword1!', PASSWORD_DEFAULT);"` and run `UPDATE users SET password_hash = '<the hash>' WHERE email = '<the email>';`.
 
 ## Student Dashboard
 

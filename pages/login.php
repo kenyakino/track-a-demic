@@ -46,6 +46,8 @@ require __DIR__ . '/../includes/auth_header.php';
         <button class="btn btn-primary btn-block" type="submit">Sign in</button>
       </form>
 
+      <p class="forgot"><strong>Forgot your password?</strong> Contact your adviser to have it reset. Advisers who forget their password should contact whoever runs this site.</p>
+
       <p class="switch">New to Track-a-Demic? <a href="register.php">Create an account</a></p>
     </section>
 <?php require __DIR__ . '/../includes/auth_footer.php'; ?>
