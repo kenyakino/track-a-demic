@@ -20,6 +20,42 @@ This project is the final requirement for Web Systems Technology.
 - Installable Progressive Web App
 - Responsive layout for desktop (1366x768), tablet (768x1024), and mobile (375x667)
 
+## Screenshots
+
+Taken from the running system with the sample data. Desktop is 1366x768, tablet is 768x1024, and mobile is 375x667.
+
+### Sign in and register
+
+| Sign in | Register |
+|---|---|
+| ![Sign in page](docs/screenshots/login.png) | ![Register page](docs/screenshots/register.png) |
+
+### Student
+
+| Dashboard (topic, group, progress chart, milestones) | Milestones |
+|---|---|
+| ![Student dashboard](docs/screenshots/student-dashboard.png) | ![Student milestones](docs/screenshots/student-milestones.png) |
+
+| Meetings (requests and shared logs) | Profile (30-day lock) |
+|---|---|
+| ![Student meetings](docs/screenshots/student-meetings.png) | ![Profile page](docs/screenshots/profile.png) |
+
+### Adviser
+
+| Dashboard (topics by status, progress per group) | Topic reviews (similar-topic warning) |
+|---|---|
+| ![Adviser dashboard](docs/screenshots/adviser-dashboard.png) | ![Adviser topic reviews](docs/screenshots/adviser-topic-reviews.png) |
+
+| Meetings (accept or reject requests) | Dark mode |
+|---|---|
+| ![Adviser meetings](docs/screenshots/adviser-meetings.png) | ![Dark mode](docs/screenshots/dark-mode.png) |
+
+### Responsive layout
+
+| Tablet (768x1024) | Mobile (375x667) |
+|---|---|
+| ![Tablet adviser dashboard](docs/screenshots/tablet-adviser-dashboard.png) | ![Mobile student dashboard](docs/screenshots/mobile-student-dashboard.png) |
+
 ## Technologies
 
 - HTML5, CSS3, JavaScript (ES6+)
@@ -38,7 +74,7 @@ track-a-demic/
 ├── assets/       CSS, JavaScript, and images
 ├── config/       Configuration template (config.php is not committed)
 ├── database/     schema.sql and seed.sql
-├── docs/         Diagrams (architecture, ERD, use case, flowcharts)
+├── docs/         Diagrams (architecture, ERD, use case, flowcharts) and screenshots
 ├── includes/     Shared PHP code (database, auth helpers, page layout)
 ├── pages/        Student and adviser pages
 ├── uploads/      Uploaded files (not committed)
@@ -257,7 +293,17 @@ Shared page pieces (head, logo, theme button) live in `includes/layout.php`, so 
 
 ## Deployment (InfinityFree)
 
-Deployment steps will be added once the system is complete.
+Live site: https://trackademic.great-site.net
+
+1. Create a free hosting account at InfinityFree and pick a subdomain.
+2. In the control panel, open **MySQL Databases** and create a database. Note the host (like `sql104.infinityfree.com`), the full database name, the username, and the password.
+3. Open phpMyAdmin, select the database, and import `database/schema.sql`. Do not import `seed.sql` on the live site.
+4. Upload the project files into the `htdocs` folder (FTP or the VS Code SFTP extension), so that `index.php` is directly inside `htdocs`. Do not upload `.git` or your local `config/config.php`. Make sure the `.htaccess` files in `uploads/` and `config/` are uploaded too.
+5. On the server, create `config/config.php` from `config/config.example.php`. Set `env` to `production`, `base_url` to `''`, the database values from step 2, a private `adviser_code`, and your own `default_reset_password`.
+6. Open `/api/health.php`. It should show `{"ok":true,"database":"connected"}`.
+7. Check that `/uploads/` and `/config/config.php` show Forbidden, and that a student cannot open the adviser pages.
+
+Hosting limits to know about: files up to 10 MB, no reliable email (so password resets are done by the adviser), and a short browser check the first time a visitor opens the site.
 
 ## Commit Message Convention
 
