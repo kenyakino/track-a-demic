@@ -68,7 +68,7 @@ function current_user(): ?array
         return null;
     }
 
-    $stmt = db()->prepare('SELECT id, full_name, title, email, role FROM users WHERE id = ? LIMIT 1');
+    $stmt = db()->prepare('SELECT id, first_name, last_name, full_name, title, email, role, avatar_path FROM users WHERE id = ? LIMIT 1');
     $stmt->execute([$id]);
     $user = $stmt->fetch();
 
@@ -79,6 +79,9 @@ function current_user(): ?array
 
     $user['id'] = (int) $user['id'];
     $user['display_name'] = display_name($user);
+    $user['initials'] = strtoupper(substr($user['first_name'] ?: $user['full_name'], 0, 1) . substr($user['last_name'], 0, 1));
+    $user['avatar_url'] = $user['avatar_path'] ? app_url('api/avatar.php?id=' . $user['id'] . '&v=' . substr(md5($user['avatar_path']), 0, 8)) : null;
+    unset($user['avatar_path']);
     return $user;
 }
 
@@ -147,6 +150,19 @@ function require_role_page(string $role): array
 
     if ($user['role'] !== $role) {
         header('Location: ' . app_url(dashboard_path($user['role'])));
+        exit;
+    }
+
+    return $user;
+}
+
+/** Use at the top of a page that any signed-in user may open. */
+function require_user_page(): array
+{
+    $user = current_user();
+
+    if ($user === null) {
+        header('Location: ' . app_url('pages/login.php'));
         exit;
     }
 

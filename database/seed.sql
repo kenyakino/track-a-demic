@@ -10,13 +10,13 @@
 SET NAMES utf8mb4;
 
 -- Users: 2 advisers, 4 students
-INSERT INTO users (id, full_name, title, email, password_hash, role) VALUES
-(1, 'Maria Santos', 'Dr.', 'adviser1@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'adviser'),
-(2, 'Jose Reyes', 'Prof.', 'adviser2@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'adviser'),
-(3, 'Juan Dela Cruz', NULL, 'student1@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
-(4, 'Ana Lopez', NULL, 'student2@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
-(5, 'Mark Villanueva', NULL, 'student3@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
-(6, 'Sofia Ramos', NULL, 'student4@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student');
+INSERT INTO users (id, first_name, last_name, full_name, title, email, password_hash, role) VALUES
+(1, 'Maria', 'Santos', 'Maria Santos', 'Dr.', 'adviser1@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'adviser'),
+(2, 'Jose', 'Reyes', 'Jose Reyes', 'Prof.', 'adviser2@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'adviser'),
+(3, 'Juan', 'Dela Cruz', 'Juan Dela Cruz', NULL, 'student1@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
+(4, 'Ana', 'Lopez', 'Ana Lopez', NULL, 'student2@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
+(5, 'Mark', 'Villanueva', 'Mark Villanueva', NULL, 'student3@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student'),
+(6, 'Sofia', 'Ramos', 'Sofia Ramos', NULL, 'student4@trackademic.test', '$2y$10$lMSuFoZ9tw4SlRvw0EdbXOtexpfr6SWvoAv5iuAiqMuQGs248Jhtu', 'student');
 
 -- One group created by Dr. Santos, with three members (Juan is the leader)
 INSERT INTO capstone_groups (id, group_name, adviser_id) VALUES
@@ -49,8 +49,8 @@ INSERT INTO group_milestones (group_id, template_id, status) VALUES
 (1, 4, 'Not Started'),
 (1, 5, 'Not Started');
 
-INSERT INTO meetings (group_id, meeting_date, notes, action_items, confirmed_by_adviser) VALUES
-(1, '2026-10-12',
+INSERT INTO meetings (group_id, author_id, meeting_date, notes, action_items, confirmed_by_adviser) VALUES
+(1, 3, '2026-10-12',
  'Discussed the problem statement and possible scope of the system.',
  'Narrow the scope to one program; revise the problem statement; list at least five references.',
  1);

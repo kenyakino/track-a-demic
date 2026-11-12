@@ -12,11 +12,15 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
   id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name    VARCHAR(50) NOT NULL DEFAULT '',
+  last_name     VARCHAR(50) NOT NULL DEFAULT '',
   full_name     VARCHAR(100) NOT NULL,
   title         VARCHAR(30) NULL,
   email         VARCHAR(150) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   role          ENUM('student','adviser') NOT NULL DEFAULT 'student',
+  avatar_path   VARCHAR(100) NULL,
+  profile_updated_at DATETIME NULL,
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_email (email)
@@ -111,11 +115,38 @@ CREATE TABLE IF NOT EXISTS group_milestones (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ------------------------------------------------------------
--- meetings: adviser meeting logs
+-- meeting_requests: a group asks for a meeting; the adviser accepts or rejects
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS meeting_requests (
+  id               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  group_id         INT UNSIGNED NOT NULL,
+  requested_by     INT UNSIGNED NULL,
+  starts_at        DATETIME NOT NULL,
+  duration_minutes SMALLINT UNSIGNED NOT NULL DEFAULT 60,
+  purpose          VARCHAR(255) NOT NULL,
+  link             VARCHAR(255) NULL,
+  status           ENUM('Pending','Accepted','Rejected','Cancelled') NOT NULL DEFAULT 'Pending',
+  decision_note    VARCHAR(500) NULL,
+  suggested_at     DATETIME NULL,
+  decided_at       DATETIME NULL,
+  created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_requests_group (group_id, status),
+  KEY idx_requests_start (starts_at),
+  CONSTRAINT fk_requests_group FOREIGN KEY (group_id)
+    REFERENCES capstone_groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_requests_user FOREIGN KEY (requested_by)
+    REFERENCES users (id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ------------------------------------------------------------
+-- meetings: shared meeting logs (written by the group or the adviser)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS meetings (
   id                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
   group_id              INT UNSIGNED NOT NULL,
+  author_id             INT UNSIGNED NULL,
+  request_id            INT UNSIGNED NULL,
   meeting_date          DATE NOT NULL,
   notes                 TEXT NOT NULL,
   action_items          TEXT NULL,
@@ -124,7 +155,11 @@ CREATE TABLE IF NOT EXISTS meetings (
   PRIMARY KEY (id),
   KEY idx_meetings_group (group_id),
   CONSTRAINT fk_meetings_group FOREIGN KEY (group_id)
-    REFERENCES capstone_groups (id) ON DELETE CASCADE ON UPDATE CASCADE
+    REFERENCES capstone_groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_meetings_author FOREIGN KEY (author_id)
+    REFERENCES users (id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_meetings_request FOREIGN KEY (request_id)
+    REFERENCES meeting_requests (id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ------------------------------------------------------------

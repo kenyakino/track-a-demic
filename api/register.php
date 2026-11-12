@@ -12,7 +12,11 @@ verify_csrf();
 
 $in = request_json();
 
-$fullName = trim((string) ($in['full_name'] ?? ''));
+require_once __DIR__ . '/../includes/profile.php';
+
+$firstName = clean_person_name((string) ($in['first_name'] ?? ''));
+$lastName  = clean_person_name((string) ($in['last_name'] ?? ''));
+$fullName  = trim($firstName . ' ' . $lastName);
 $email    = strtolower(trim((string) ($in['email'] ?? '')));
 $password = (string) ($in['password'] ?? '');
 $confirm  = (string) ($in['confirm_password'] ?? '');
@@ -21,8 +25,11 @@ $code     = trim((string) ($in['adviser_code'] ?? ''));
 
 $errors = [];
 
-if (text_length($fullName) < 2 || text_length($fullName) > 100) {
-    $errors['full_name'] = 'Enter your full name (2 to 100 characters).';
+if (($e1 = validate_person_name($firstName, 'first name')) !== null) {
+    $errors['first_name'] = $e1;
+}
+if (($e2 = validate_person_name($lastName, 'last name')) !== null) {
+    $errors['last_name'] = $e2;
 }
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL) || text_length($email) > 150) {
@@ -99,9 +106,9 @@ if ($exists->fetch()) {
 
 try {
     $insert = db()->prepare(
-        'INSERT INTO users (full_name, title, email, password_hash, role) VALUES (?, ?, ?, ?, ?)'
+        'INSERT INTO users (first_name, last_name, full_name, title, email, password_hash, role) VALUES (?, ?, ?, ?, ?, ?, ?)'
     );
-    $insert->execute([$fullName, $userTitle, $email, password_hash($password, PASSWORD_DEFAULT), $role]);
+    $insert->execute([$firstName, $lastName, $fullName, $userTitle, $email, password_hash($password, PASSWORD_DEFAULT), $role]);
 } catch (PDOException $e) {
     // 1062 = duplicate key: someone registered the same email at the same moment
     if (($e->errorInfo[1] ?? 0) === 1062) {

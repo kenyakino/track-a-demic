@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../includes/layout.php';
 
-// Only advisers may open this page
 $user = require_role_page('adviser');
 $csrf = csrf_token();
 ?>
@@ -12,14 +11,21 @@ $csrf = csrf_token();
 <head>
 <?php layout_head('Meetings', $csrf); ?>
 </head>
-<body <?php layout_body_data(); ?>>
+<body <?php layout_body_data(); ?> data-role="adviser">
   <?php layout_app_open($user, 'meetings'); ?>
 
   <main class="shell-main">
-    <h1>Meetings</h1>
-    <p class="lead">Confirm the meeting logs your groups write.</p>
+    <div class="page-head">
+      <div>
+        <h1>Meetings</h1>
+        <p class="lead">Answer meeting requests from your groups, and keep a shared log of what was discussed.</p>
+      </div>
+      <div class="page-actions">
+        <button type="button" class="btn btn-primary" data-action="log" hidden>Log a meeting</button>
+      </div>
+    </div>
 
-    <div class="filters" id="filters" role="group" aria-label="Filter meetings"></div>
+    <div class="filters" role="tablist" aria-label="Meetings" id="tabs"></div>
 
     <div id="app" aria-live="polite" aria-busy="true">
       <div class="skeleton-stack" aria-hidden="true">
@@ -31,10 +37,14 @@ $csrf = csrf_token();
   </main>
   <?php layout_app_close(); ?>
 
+  <dialog id="dlg" class="dialog" aria-labelledby="dlg-title">
+    <form id="dlg-form" class="dialog-body" novalidate></form>
+  </dialog>
+
   <div class="toasts" data-toasts role="status" aria-live="polite"></div>
 
-  <script type="module" src="<?= e(app_url('assets/js/theme.js')) ?>"></script>
-  <script type="module" src="<?= e(app_url('assets/js/app.js')) ?>"></script>
-  <script type="module" src="<?= e(app_url('assets/js/adviser-meetings.js')) ?>"></script>
+  <script type="module" src="<?= e(asset_url('assets/js/theme.js')) ?>"></script>
+  <script type="module" src="<?= e(asset_url('assets/js/app.js')) ?>"></script>
+  <script type="module" src="<?= e(asset_url('assets/js/meetings.js')) ?>"></script>
 </body>
 </html>

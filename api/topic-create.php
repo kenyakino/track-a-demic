@@ -53,7 +53,10 @@ try {
     json_response(['ok' => false, 'message' => 'Could not submit the topic. Try again.'], 500);
 }
 
-add_notification($membership['adviser_id'], $membership['group_name'] . ' submitted a new topic proposal.');
+$similar = find_similar_topic($title, $description, (int) $membership['group_id']);
+
+add_notification($membership['adviser_id'], $membership['group_name'] . ' submitted a new topic proposal.'
+    . ($similar ? ' It looks similar to "' . $similar['title'] . '" (' . $similar['group_name'] . ').' : ''));
 
 $stmt = db()->prepare('SELECT id, title, description, status, adviser_remarks, submitted_at, updated_at FROM topics WHERE id = ?');
 $stmt->execute([$topicId]);
@@ -62,4 +65,6 @@ json_response([
     'ok' => true,
     'message' => 'Topic submitted for review.',
     'topic' => topic_view($stmt->fetch(), $membership['is_leader']),
+    // Students only learn that a similar topic exists, never which one
+    'similar' => $similar !== null,
 ], 201);

@@ -98,6 +98,7 @@ The sample data is for development and demos only. Do not import `seed.sql` on a
 | references_list | Saved references |
 | files | Uploaded drafts and documents |
 | notifications | In-system alerts |
+| meeting_requests | Meeting requests and their decisions |
 
 ### Updating an existing database
 
@@ -107,6 +108,8 @@ Fresh installs use `schema.sql` and already have everything. If you created your
 |---|---|
 | `001-file-sources.sql` | Where each file came from (`source_type`, `topic_id` on the `files` table) |
 | `002-user-title.sql` | Academic title for advisers (`title` on the `users` table) |
+| `003-profile.sql` | First and last name, profile picture, and the 30-day profile lock |
+| `004-meetings.sql` | Meeting requests, and authors on meeting logs |
 
 ## Authentication
 
@@ -158,11 +161,18 @@ Share the code only with advisers. The default placeholder code is rejected when
 | `api/milestone-update.php` | Edit a milestone and its groups (POST) |
 | `api/milestone-delete.php` | Delete a milestone nobody has started (POST) |
 | `api/milestone-review.php` | Mark complete, send back for rework, or reopen (POST) |
-| `api/student-meetings.php` | Student's group meeting logs (GET) |
-| `api/meeting-save.php` | Log or edit a meeting (POST) |
-| `api/meeting-delete.php` | Delete an unconfirmed meeting (POST) |
-| `api/adviser-meetings.php` | Meeting logs of the adviser's groups (GET) |
+| `api/meetings.php` | Meeting requests and shared logs for the signed-in user (GET) |
+| `api/meeting-request-create.php` | Student asks for a meeting (POST) |
+| `api/meeting-request-decide.php` | Adviser accepts or rejects a request (POST) |
+| `api/meeting-request-cancel.php` | Cancel a request or an accepted meeting (POST) |
+| `api/meeting-save.php` | Write or edit a meeting log (POST, student or adviser) |
+| `api/meeting-delete.php` | Delete a meeting log you may edit (POST) |
 | `api/meeting-confirm.php` | Confirm a meeting log, or reopen it (POST) |
+| `api/notifications.php` | Own notifications and unread count (GET) |
+| `api/notification-read.php` | Mark one or all notifications as read (POST) |
+| `api/profile.php` | Own profile and lock status (GET) |
+| `api/profile-update.php` | Update name, email, password, picture (POST) |
+| `api/avatar.php` | Profile picture, with a permission check (GET) |
 | `api/student-references.php` | Student's group references (GET) |
 | `api/reference-save.php` | Add or edit a reference (POST) |
 | `api/reference-delete.php` | Delete a reference (POST) |
@@ -215,29 +225,19 @@ An adviser can only see and change their own groups. The server checks ownership
 
 **Meetings**
 
-- Students log adviser meetings with the date, notes, and action items. The date cannot be in the future.
-- The adviser confirms a meeting. A confirmed meeting is locked for the students, and the adviser can reopen it if it needs a fix.
+- A student group requests a meeting with a date, start time, length, purpose, and an optional link. Advisers cannot propose meetings.
+- The adviser accepts or rejects each request. A rejection needs a reason and may suggest another date and time. If an accepted meeting would overlap another one, the adviser gets a warning and decides.
+- Meeting logs are shared. Students and the adviser can both write a log (notes and action items), optionally linked to an accepted meeting. Each log shows who wrote it. The adviser confirms the logs written by students; a confirmed log is locked for the group.
 
-## References and Files
+## Profile
 
-**References:** any member of a group can add, edit, and delete the group's references (title, author, optional year and web address). The list has live search and sorting by newest, title, or year. Web addresses must start with `http://` or `https://`.
+Every user has a Profile page: first name, last name, email, password, and profile picture (JPG, PNG, or WebP up to 2 MB, cropped to a square). Advisers can also edit their title. **After a saved change the profile is locked for 30 days.** Saving without changes does not start the lock. Changing the email or password needs the current password. If an adviser resets a student's password, that student's lock is lifted.
 
-**Files:** group members upload drafts as **PDF or DOCX**, up to 5 MB each (change `upload` in `config/config.php`). Optionally a file is attached to a milestone.
-- The server checks the extension, the size, and the real content of the file. A text file renamed to `.pdf` is rejected.
-- Files are saved under a random name in `uploads/`, never under the name the user typed.
-- `uploads/` cannot be opened directly from the web (see `uploads/.htaccess`). Files are served by `api/file-download.php`, which only allows the group's members and the group's adviser.
-- The uploader or the group leader can delete a file. Advisers can read and download but not delete.
-- The host's PHP settings (`upload_max_filesize`, `post_max_size`) also limit uploads. A too-large file gets a clear message.
+## Notifications, Charts, and Similar Topics
 
-Advisers see every group's references and files on one page, with a group filter and search.
-
-## Required Files and Where Files Come From
-
-- **Topic proposals** must be sent with a proposal file (PDF or DOCX). Editing a topic that still waits for review keeps the current file unless a new one is attached. After the adviser requests a revision, a **new file is required** to resubmit.
-- **Submitting a milestone for review** requires a file (PDF or DOCX) every time, including after "Needs Rework" or a withdrawn submission.
-- A new file **replaces** the previous one for the same topic or milestone: the old file is deleted. Deleting a topic deletes its proposal file.
-- Every file shows up on the Files page with a **Source** column: *Topic proposal*, *Milestone*, or *Direct upload* (files added on the Files page). Only direct uploads can be deleted by hand.
-- The adviser downloads the proposal file from the topic review, and the milestone file from the milestone review.
+- **Notifications:** a bell with an unread count, a list, "Mark all as read", and a refresh every 60 seconds.
+- **Charts:** advisers see topics by status and milestone progress per group; students see their own progress. Chart.js is saved in `assets/vendor/`, so no outside link is used.
+- **Similar-topic check:** the words of a new topic are compared with other groups' topics (Jaccard score: shared words divided by all different words, flagged at 30% or more). Students only see that a similar topic exists. Advisers see which one.
 
 ## Design and Theme
 

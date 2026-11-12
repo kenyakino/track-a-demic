@@ -5,6 +5,7 @@
 import { getJson, goToLogin, baseUrl } from './api.js';
 import { html, mount } from './ui.js';
 import { badge } from './labels.js';
+import { drawChart, topicStatusColors } from './charts.js';
 
 const app = document.getElementById('app');
 const pageUrl = (file) => `${baseUrl}/pages/adviser/${file}`;
@@ -75,6 +76,72 @@ const groupsCard = ({ groups }) => html`<article class="card">
       </div>`}
 </article>`;
 
+const TOPIC_ORDER = ['No topic', 'Proposed', 'For Revision', 'Approved', 'In Progress', 'Defended'];
+
+const topicCounts = (groups) =>
+  TOPIC_ORDER.map((name) => groups.filter((g) => (g.topic_status ?? 'No topic') === name).length);
+
+const chartsBlock = ({ groups }) => {
+  if (groups.length === 0) return html``;
+
+  const counts = topicCounts(groups);
+  const summary = TOPIC_ORDER.map((name, i) => `${name}: ${counts[i]}`).join(', ');
+
+  return html`<section class="chart-grid" aria-label="Charts">
+    <article class="card">
+      <h2>Topics by status</h2>
+      <div class="chart-box"><canvas id="chart-topics" role="img" aria-label="Bar chart of groups by topic status. ${summary}"></canvas></div>
+      <p class="meta">${summary}</p>
+    </article>
+    <article class="card">
+      <h2>Milestone progress per group</h2>
+      <div class="chart-box"><canvas id="chart-progress" role="img" aria-label="Stacked bar chart of completed, remaining, and overdue milestones for each group"></canvas></div>
+      <p class="meta">${groups.map((g) => `${g.name}: ${g.ms_done} of ${g.ms_total} done`).join('. ')}</p>
+    </article>
+  </section>`;
+};
+
+const drawCharts = ({ groups }) => {
+  if (groups.length === 0) return;
+
+  drawChart('chart-topics', (c) => {
+    const colors = topicStatusColors(c);
+    return {
+      type: 'bar',
+      data: {
+        labels: TOPIC_ORDER,
+        datasets: [{ label: 'Groups', data: topicCounts(groups), backgroundColor: TOPIC_ORDER.map((n) => colors[n]), borderColor: c.ink, borderWidth: 1 }],
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Groups' } } },
+      },
+    };
+  });
+
+  drawChart('chart-progress', (c) => ({
+    type: 'bar',
+    data: {
+      labels: groups.map((g) => g.name),
+      datasets: [
+        { label: 'Completed', data: groups.map((g) => g.ms_done), backgroundColor: c.green },
+        { label: 'Remaining', data: groups.map((g) => Math.max(0, g.ms_total - g.ms_done - g.ms_overdue)), backgroundColor: c.soft, borderColor: c.line, borderWidth: 1 },
+        { label: 'Overdue', data: groups.map((g) => g.ms_overdue), backgroundColor: c.red },
+      ],
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Milestones' } },
+        y: { stacked: true },
+      },
+      plugins: { legend: { position: 'bottom' } },
+    },
+  }));
+};
+
 const errorCard = (message) => html`<article class="card">
   <div class="empty">
     <p class="empty-title">Could not load your overview</p>
@@ -96,7 +163,8 @@ const load = async () => {
       return;
     }
 
-    mount(app, html`${statsBlock(data)}<div class="stack">${attentionCard(data)}${groupsCard(data)}</div>`);
+    mount(app, html`${statsBlock(data)}${chartsBlock(data)}<div class="adviser-grid">${attentionCard(data)}${groupsCard(data)}</div>`);
+    drawCharts(data);
   } catch (error) {
     mount(app, errorCard('Could not reach the server. Check your connection and try again.'));
   } finally {

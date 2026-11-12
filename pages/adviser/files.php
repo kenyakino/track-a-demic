@@ -38,8 +38,8 @@ $csrf = csrf_token();
 
   <div class="toasts" data-toasts role="status" aria-live="polite"></div>
 
-  <script type="module" src="<?= e(app_url('assets/js/theme.js')) ?>"></script>
-  <script type="module" src="<?= e(app_url('assets/js/app.js')) ?>"></script>
-  <script type="module" src="<?= e(app_url('assets/js/adviser-files.js')) ?>"></script>
+  <script type="module" src="<?= e(asset_url('assets/js/theme.js')) ?>"></script>
+  <script type="module" src="<?= e(asset_url('assets/js/app.js')) ?>"></script>
+  <script type="module" src="<?= e(asset_url('assets/js/adviser-files.js')) ?>"></script>
 </body>
 </html>

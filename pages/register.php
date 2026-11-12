@@ -25,9 +25,15 @@ require __DIR__ . '/../includes/auth_header.php';
 
       <form data-form="register" novalidate>
         <div class="field">
-          <label for="full_name">Full name</label>
-          <input id="full_name" name="full_name" type="text" autocomplete="name" aria-describedby="full_name-error" required>
-          <p class="field-error" id="full_name-error" data-error-for="full_name"></p>
+          <label for="first_name">First name</label>
+          <input id="first_name" name="first_name" type="text" autocomplete="given-name" maxlength="50" aria-describedby="first_name-error" required>
+          <p class="field-error" id="first_name-error" data-error-for="first_name"></p>
+        </div>
+
+        <div class="field">
+          <label for="last_name">Last name</label>
+          <input id="last_name" name="last_name" type="text" autocomplete="family-name" maxlength="50" aria-describedby="last_name-error" required>
+          <p class="field-error" id="last_name-error" data-error-for="last_name"></p>
         </div>
 
         <div class="field">

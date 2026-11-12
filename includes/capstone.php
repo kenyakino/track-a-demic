@@ -121,6 +121,74 @@ function topic_view(array $topic, bool $isLeader): array
     ];
 }
 
+/* ------------------------------------------------------------
+ * Similar-topic check
+ * A topic is turned into a set of words. Two topics are compared with
+ * the Jaccard score: shared words / all different words used by either one.
+ * 0 means nothing in common, 1 means the same words.
+ * ---------------------------------------------------------- */
+
+const SIMILARITY_THRESHOLD = 0.30;
+
+/** The distinct meaningful words of a text (lowercase, no common words). */
+function topic_words(string $text): array
+{
+    static $skip = null;
+    $skip ??= array_flip(explode(' ', 'the and for with from that this into using use used based study system systems web app application applications proposed develop development design implementation analysis project our their its are was were has have been of in on to a an by at as or is it be via'));
+
+    $text = function_exists('mb_strtolower') ? mb_strtolower($text) : strtolower($text);
+    preg_match_all('/[\p{L}\p{N}]{3,}/u', $text, $m);
+
+    $words = [];
+    foreach ($m[0] as $word) {
+        // Treat simple plurals the same ("students" = "student")
+        if (strlen($word) > 4 && substr($word, -1) === 's') {
+            $word = substr($word, 0, -1);
+        }
+        if (!isset($skip[$word])) {
+            $words[$word] = true;
+        }
+    }
+    return array_keys($words);
+}
+
+/** Word-overlap (Jaccard) score between two texts, from 0 to 1. */
+function topic_similarity(string $a, string $b): float
+{
+    $wa = topic_words($a);
+    $wb = topic_words($b);
+    if ($wa === [] || $wb === []) {
+        return 0.0;
+    }
+    $shared = count(array_intersect($wa, $wb));
+    $all = count(array_unique(array_merge($wa, $wb)));
+    return $all > 0 ? $shared / $all : 0.0;
+}
+
+/**
+ * The most similar topic of another group (rejected topics are ignored),
+ * or null when nothing reaches the threshold.
+ */
+function find_similar_topic(string $title, string $description, int $groupId): ?array
+{
+    $stmt = db()->prepare(
+        "SELECT t.id, t.title, t.description, g.group_name
+           FROM topics t JOIN capstone_groups g ON g.id = t.group_id
+          WHERE t.group_id <> ? AND t.status <> 'Rejected'"
+    );
+    $stmt->execute([$groupId]);
+
+    $mine = $title . ' ' . $title . ' ' . $description;   // the title counts double
+    $best = null;
+    foreach ($stmt->fetchAll() as $row) {
+        $score = topic_similarity($mine, $row['title'] . ' ' . $row['title'] . ' ' . $row['description']);
+        if ($score >= SIMILARITY_THRESHOLD && ($best === null || $score > $best['score'])) {
+            $best = ['id' => (int) $row['id'], 'title' => $row['title'], 'group_name' => $row['group_name'], 'score' => round($score, 2)];
+        }
+    }
+    return $best;
+}
+
 /** Milestones of a group with due dates, in deadline order. */
 function group_milestone_list(int $groupId): array
 {
@@ -173,6 +241,17 @@ function add_notification(int $userId, string $message): void
 {
     $stmt = db()->prepare('INSERT INTO notifications (user_id, message) VALUES (?, ?)');
     $stmt->execute([$userId, mb_strimwidth_safe($message, 255)]);
+}
+
+/** "5 minutes ago" style text for a timestamp. */
+function time_ago(string $timestamp): string
+{
+    $diff = max(0, time() - (int) strtotime($timestamp));
+    if ($diff < 60) return 'just now';
+    if ($diff < 3600) return floor($diff / 60) . ' min ago';
+    if ($diff < 86400) return floor($diff / 3600) . ' h ago';
+    if ($diff < 604800) return floor($diff / 86400) . ' d ago';
+    return date('M j, Y', strtotime($timestamp));
 }
 
 /** Cuts text to a maximum length (works even without the mbstring extension). */
@@ -318,7 +397,13 @@ function adviser_topic_rows(int $adviserId): array
 
 function adviser_topic_view(array $row, array $comments): array
 {
+    // Advisers see which topic looks similar (title and group only)
+    $similar = in_array($row['status'], ['Proposed', 'For Revision'], true)
+        ? find_similar_topic($row['title'], $row['description'], (int) $row['group_id'])
+        : null;
+
     return [
+        'similar'         => $similar === null ? null : ['title' => $similar['title'], 'group_name' => $similar['group_name'], 'percent' => (int) round($similar['score'] * 100)],
         'id'              => (int) $row['id'],
         'group_id'        => (int) $row['group_id'],
         'group_name'      => $row['group_name'],

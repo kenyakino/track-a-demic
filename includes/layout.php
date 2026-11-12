@@ -105,6 +105,7 @@ function nav_items_for(string $role): array
             'milestones' => ['Milestones', 'pages/adviser/milestones.php', 'flag'],
             'meetings'   => ['Meetings', 'pages/adviser/meetings.php', 'calendar'],
             'files'      => ['Files and references', 'pages/adviser/files.php', 'folder'],
+            'profile'    => ['Profile', 'pages/profile.php', 'user'],
         ];
     }
 
@@ -114,6 +115,7 @@ function nav_items_for(string $role): array
         'meetings'   => ['Meetings', 'pages/student/meetings.php', 'calendar'],
         'references' => ['References', 'pages/student/references.php', 'book'],
         'files'      => ['Files', 'pages/student/files.php', 'folder'],
+        'profile'    => ['Profile', 'pages/profile.php', 'user'],
     ];
 }
 
@@ -127,10 +129,31 @@ function nav_icon(string $name): void
         'flag'     => '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
         'calendar' => '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
         'book'     => '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>',
+        'user'     => '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/>',
         'folder'   => '<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
     ];
     echo '<svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
        . ($paths[$name] ?? '') . '</svg>';
+}
+
+/** Prints the notification bell button (behavior lives in assets/js/app.js). */
+/** Round profile picture, or the user's initials when there is no picture. */
+function avatar_markup(array $user, string $class = 'avatar'): string
+{
+    if (!empty($user['avatar_url'])) {
+        return '<img class="' . e($class) . '" src="' . e($user['avatar_url']) . '" alt="" width="40" height="40">';
+    }
+    return '<span class="' . e($class) . '" aria-hidden="true">' . e($user['initials'] ?? '?') . '</span>';
+}
+
+function layout_bell(): void
+{
+    ?>
+<button type="button" class="icon-btn bell-btn" data-bell aria-label="Notifications" aria-expanded="false" aria-controls="notif-panel">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+  <span class="bell-badge" data-bell-badge hidden>0</span>
+</button>
+    <?php
 }
 
 /**
@@ -161,9 +184,15 @@ function layout_app_open(array $user, string $active): void
       </ul>
     </nav>
     <div class="sidebar-user">
-      <p class="sidebar-name"><?= e($user['display_name'] ?? $user['full_name']) ?></p>
-      <p class="sidebar-role"><?= e(ucfirst($user['role'])) ?></p>
+      <div class="sidebar-person">
+        <?= avatar_markup($user) ?>
+        <div>
+          <p class="sidebar-name"><?= e($user['display_name'] ?? $user['full_name']) ?></p>
+          <p class="sidebar-role"><?= e(ucfirst($user['role'])) ?></p>
+        </div>
+      </div>
       <div class="sidebar-actions">
+        <?php layout_bell(); ?>
         <?php layout_theme_toggle(); ?>
         <button type="button" class="btn btn-quiet btn-sm sidebar-signout" data-logout aria-label="Sign out" title="Sign out">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M16 8l4 4-4 4M20 12H9"/></svg>
@@ -182,8 +211,17 @@ function layout_app_open(array $user, string $active): void
         </svg>
       </button>
       <?php layout_brand(app_url(dashboard_path($user['role']))); ?>
-      <?php layout_theme_toggle(); ?>
+      <span class="mobile-actions"><?php layout_bell(); ?><?php layout_theme_toggle(); ?></span>
     </header>
+    <aside class="notif-panel" id="notif-panel" aria-label="Notifications" hidden>
+      <div class="notif-head">
+        <h2>Notifications</h2>
+        <button type="button" class="btn btn-quiet btn-sm" data-notif-all>Mark all as read</button>
+        <button type="button" class="icon-btn" data-notif-close aria-label="Close notifications">&times;</button>
+      </div>
+      <ul class="notif-list" data-notif-list></ul>
+      <p class="sr-only" role="status" aria-live="polite" data-notif-status></p>
+    </aside>
     <?php
 }
 

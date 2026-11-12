@@ -29,7 +29,7 @@ if (!$student) {
 // The default password is hashed before it is saved. The plain text is never stored.
 $hash = password_hash(default_reset_password(), PASSWORD_DEFAULT);
 
-$update = db()->prepare("UPDATE users SET password_hash = ? WHERE id = ? AND role = 'student'");
+$update = db()->prepare("UPDATE users SET password_hash = ?, profile_updated_at = NULL WHERE id = ? AND role = 'student'");
 $update->execute([$hash, (int) $student['id']]);
 
 add_notification((int) $student['id'], 'Your adviser reset your password. Ask them for the default password and sign in with it.');

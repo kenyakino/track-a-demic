@@ -40,6 +40,8 @@ foreach (group_topic_rows($groupId) as $row) {
 
 if ($topic !== null) {
     $topic['comments'] = topic_comments_map([$topic['id']])[$topic['id']] ?? [];
+    $topic['similar'] = in_array($topic['status'], ['Proposed', 'For Revision'], true)
+        && find_similar_topic($topic['title'], $topic['description'], $groupId) !== null;
     $topic['file'] = source_files_map('topic', [$topic['id']])[$topic['id']] ?? null;
 }
 

@@ -1150,3 +1150,82 @@ body.sidebar-open .sidebar { visibility: visible; transform: none; }
   .btn, .sidebar, .app-shell, .sidebar-collapse svg, .theme-switch-track, .theme-switch-thumb { transition: none; }
   .skeleton { animation: none; }
 }
+
+/* ---------- Notifications bell ---------- */
+.bell-btn { position: relative; }
+.bell-badge {
+  position: absolute; top: 0.15rem; right: 0.1rem;
+  min-width: 1.15rem; height: 1.15rem; padding: 0 0.25rem;
+  display: grid; place-items: center;
+  font-size: 0.72rem; font-weight: 600; line-height: 1;
+  color: #fff; background: var(--secondary); border-radius: 999px;
+}
+.mobile-actions { display: flex; align-items: center; gap: 0.25rem; }
+.notif-panel {
+  position: fixed; z-index: 60; top: 3.5rem; right: 0.75rem;
+  width: min(24rem, calc(100vw - 1.5rem)); max-height: 70vh; overflow: auto;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.18);
+}
+@media (min-width: 1024px) { .notif-panel { top: auto; bottom: 1rem; left: 17rem; right: auto; } }
+.notif-panel[hidden] { display: none; }
+.notif-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--line); }
+.notif-head h2 { flex: 1; font-size: 1.05rem; margin: 0; }
+.notif-list { list-style: none; margin: 0; padding: 0; }
+.notif-item button {
+  display: flex; flex-direction: column; gap: 0.15rem; width: 100%;
+  padding: 0.7rem 0.9rem; text-align: left; font: inherit; color: var(--ink);
+  background: transparent; border: 0; border-bottom: 1px solid var(--line); cursor: pointer;
+}
+.notif-item button:hover { background: var(--surface-2); }
+.notif-item.is-unread button { background: var(--secondary-soft); border-left: 4px solid var(--secondary); color: var(--ink); }
+.notif-item small { color: var(--muted); }
+.notif-item.is-unread small { color: var(--muted); }
+.notif-empty { padding: 1.25rem; text-align: center; color: var(--muted); }
+
+/* ---------- Profile ---------- */
+.avatar {
+  flex: none; display: inline-grid; place-items: center;
+  width: 2.5rem; height: 2.5rem; border-radius: 50%; object-fit: cover;
+  font-weight: 600; font-size: 0.95rem; color: var(--secondary-ink);
+  background: var(--secondary-soft); border: 1px solid var(--secondary);
+}
+.avatar-lg { width: 6rem; height: 6rem; font-size: 1.8rem; }
+.sidebar-person { display: flex; align-items: center; gap: 0.65rem; }
+.sidebar-person > div { min-width: 0; }
+html[data-sidebar="collapsed"] .sidebar-person > div { display: none; }
+.profile-card { max-width: 40rem; }
+.profile-picture { display: flex; align-items: flex-start; gap: 1.25rem; margin-bottom: 1rem; }
+.profile-picture .field { flex: 1; min-width: 0; }
+.form-row { display: grid; gap: 0 1rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+.field-group { margin: 0 0 1.1rem; padding: 1rem; border: 1px solid var(--line); border-radius: 10px; }
+.field-group legend { padding: 0 0.4rem; font-weight: 600; }
+.check { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+.form-actions { display: flex; justify-content: flex-end; }
+.banner { margin-bottom: 1rem; padding: 0.8rem 1rem; border: 1px solid var(--secondary); border-radius: 10px; background: var(--secondary-soft); color: var(--ink); }
+.banner-warn { background: var(--warn-bg); border-color: var(--warn); color: var(--ink); }
+
+/* ---------- Charts ---------- */
+.chart-grid { display: grid; gap: 1rem; margin-bottom: 1rem; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+.chart-box { position: relative; height: 16rem; margin: 0.75rem 0; }
+.chart-box-sm { height: 14rem; }
+.chart-figure { margin: 0.25rem 0 0; }
+.sidebar-actions { gap: 0.25rem; }
+.sidebar-actions .icon-btn { width: 2.5rem; }
+.sidebar-signout { white-space: nowrap; flex: 1; justify-content: center; }
+
+/* ---------- Meetings ---------- */
+.page-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.conflict-list { margin: 0 0 1rem; padding-left: 1.25rem; }
+.dialog select.control { width: 100%; }
+
+/* ---------- Dashboard proportions ---------- */
+.dash-grid { align-items: start; }
+@media (min-width: 1100px) { .dash-grid { grid-template-columns: 1.35fr 1fr; } }
+.dash-col { align-content: start; }
+.chart-box-sm { height: 11rem; }
+.chart-grid { align-items: stretch; }
+.chart-grid .card { display: flex; flex-direction: column; }
+.chart-grid .chart-box { flex: 1; min-height: 14rem; height: auto; }
+.adviser-grid { display: grid; gap: 1.25rem; align-items: start; }
+@media (min-width: 1100px) { .adviser-grid { grid-template-columns: 1fr 1.6fr; } }

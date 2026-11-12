@@ -57,6 +57,7 @@ const topicRow = (topic) => html`<article class="card topic-row">
     ${badge(topic.status)}
   </div>
   <h2 class="topic-row-title">${topic.title}</h2>
+  ${topic.similar ? html`<p class="meta"><span class="badge badge-revision">Similar topic</span> ${topic.similar.title} (${topic.similar.group_name})</p>` : ''}
   <p class="topic-excerpt">${shorten(topic.description)}</p>
   <p class="meta">Submitted ${formatDate(topic.submitted_at)}. ${topic.comments.length} ${topic.comments.length === 1 ? 'comment' : 'comments'}.</p>
   <div class="card-actions">
@@ -109,6 +110,10 @@ const renderDialog = () => {
         <h2 id="review-title">${topic.title}</h2>
         ${badge(topic.status)}
       </div>
+      ${topic.similar
+        ? html`<div class="banner banner-warn" role="status"><strong>Looks similar to another topic (${topic.similar.percent}% of the words match).</strong>
+            "${topic.similar.title}" by ${topic.similar.group_name}.</div>`
+        : ''}
       <p class="topic-desc">${topic.description}</p>
       <p class="meta">Submitted ${formatDate(topic.submitted_at)}. Last updated ${formatDate(topic.updated_at)}.</p>
       ${topic.file

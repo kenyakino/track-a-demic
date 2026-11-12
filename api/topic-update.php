@@ -83,7 +83,10 @@ try {
 unlink_stored_files(array_column($oldFiles, 'file_path'));
 
 $verb = $topic['status'] === 'For Revision' ? 'resubmitted their topic after revision.' : 'updated their topic proposal.';
-add_notification($membership['adviser_id'], $membership['group_name'] . ' ' . $verb);
+$similar = find_similar_topic($title, $description, (int) $membership['group_id']);
+
+add_notification($membership['adviser_id'], $membership['group_name'] . ' ' . $verb
+    . ($similar ? ' It looks similar to "' . $similar['title'] . '" (' . $similar['group_name'] . ').' : ''));
 
 $stmt->execute([$topicId, $membership['group_id']]);
 
@@ -91,4 +94,5 @@ json_response([
     'ok' => true,
     'message' => 'Topic saved and sent for review.',
     'topic' => topic_view($stmt->fetch(), $membership['is_leader']),
+    'similar' => $similar !== null,
 ]);

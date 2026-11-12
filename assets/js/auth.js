@@ -15,7 +15,8 @@ const apiUrl = (file) => `${baseUrl}/api/${file}`;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const validators = {
-  full_name: (value) => (value.trim().length >= 2 ? '' : 'Enter your full name.'),
+  first_name: (value) => (value.trim().length >= 1 ? '' : 'Enter your first name.'),
+  last_name: (value) => (value.trim().length >= 1 ? '' : 'Enter your last name.'),
   email: (value) => (emailPattern.test(value.trim()) ? '' : 'Enter a valid email address.'),
   password: (value, form) => {
     if (form.dataset.form === 'login') {
@@ -36,7 +37,7 @@ const validators = {
 
 const fieldsByForm = {
   login: ['email', 'password'],
-  register: ['full_name', 'email', 'title', 'adviser_code', 'password', 'confirm_password'],
+  register: ['first_name', 'last_name', 'email', 'title', 'adviser_code', 'password', 'confirm_password'],
 };
 
 const setError = (form, name, message) => {

@@ -6,6 +6,7 @@
 import { getJson, postJson, postForm, goToLogin, baseUrl } from './api.js';
 import { html, mount, formatDate, formatBytes, toast } from './ui.js';
 import { TOPIC_STATUS, badge } from './labels.js';
+import { drawChart, milestoneStatusColors } from './charts.js';
 
 const app = document.getElementById('app');
 const topicDialog = document.getElementById('topic-dialog');
@@ -91,6 +92,9 @@ const topicCard = ({ topic, previous_topics: previous }) => {
       ${badge(topic.status)}
     </div>
     <p class="status-help">${TOPIC_STATUS[topic.status]?.help ?? ''}</p>
+    ${topic.similar
+      ? html`<div class="banner banner-warn" role="status"><strong>Similar topic found.</strong> Another group has proposed a topic with many of the same words. Your adviser will take a look. You may want to make yours more specific.</div>`
+      : ''}
     <h3 class="topic-title">${topic.title}</h3>
     <p class="topic-desc">${topic.description}</p>
     <p class="meta">Submitted ${formatDate(topic.submitted_at)}. Last updated ${formatDate(topic.updated_at)}.</p>
@@ -160,6 +164,41 @@ const noGroupCard = () =>
     </div>
   </article>`;
 
+const MS_ORDER = ['Not Started', 'In Progress', 'Submitted', 'Needs Rework', 'Completed'];
+
+const progressCard = ({ milestones }) => {
+  if (!milestones || milestones.length === 0) return html``;
+
+  const counts = MS_ORDER.map((name) => milestones.filter((m) => m.status === name).length);
+  const done = counts[MS_ORDER.indexOf('Completed')];
+  const percent = Math.round((done / milestones.length) * 100);
+  const summary = MS_ORDER.map((name, i) => `${name}: ${counts[i]}`).join(', ');
+
+  return html`<article class="card">
+    <h2>Your progress</h2>
+    <p class="chart-figure"><strong>${percent}%</strong> of milestones completed (${done} of ${milestones.length})</p>
+    <div class="chart-box chart-box-sm"><canvas id="chart-student" role="img" aria-label="Doughnut chart of your milestones by status. ${summary}"></canvas></div>
+    <p class="meta">${summary}</p>
+  </article>`;
+};
+
+const drawStudentChart = ({ milestones }) => {
+  if (!milestones || milestones.length === 0) return;
+
+  drawChart('chart-student', (c) => {
+    const colors = milestoneStatusColors(c);
+    const names = MS_ORDER.filter((name) => milestones.some((m) => m.status === name));
+    return {
+      type: 'doughnut',
+      data: {
+        labels: names,
+        datasets: [{ data: names.map((n) => milestones.filter((m) => m.status === n).length), backgroundColor: names.map((n) => colors[n]), borderColor: c.surface, borderWidth: 2 }],
+      },
+      options: { maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'right' } } },
+    };
+  });
+};
+
 const errorCard = (message) =>
   html`<article class="card">
     <div class="empty">
@@ -178,10 +217,11 @@ const render = () => {
   mount(
     app,
     html`<div class="dash-grid">
-      ${topicCard(overview)}
-      <div class="dash-col">${groupCard(overview)}${milestoneCard(overview)}</div>
+      <div class="dash-col">${topicCard(overview)}${milestoneCard(overview)}</div>
+      <div class="dash-col">${groupCard(overview)}${progressCard(overview)}</div>
     </div>`
   );
+  drawStudentChart(overview);
 };
 
 /* ---------- Loading ---------- */
@@ -332,6 +372,7 @@ topicForm.addEventListener('submit', async (event) => {
     if (response.ok && data.ok) {
       topicDialog.close();
       toast(data.message);
+      if (data.similar) toast('A similar topic already exists. Your adviser was told. Consider making yours more specific.', 'error');
       await load();
       return;
     }
