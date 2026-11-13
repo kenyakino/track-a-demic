@@ -293,7 +293,7 @@ Shared page pieces (head, logo, theme button) live in `includes/layout.php`, so 
 
 ## Deployment (InfinityFree)
 
-Live site: https://trackademic.great-site.net
+Live site: https://trackademic-app.2kool4u.net/
 
 1. Create a free hosting account at InfinityFree and pick a subdomain.
 2. In the control panel, open **MySQL Databases** and create a database. Note the host (like `sql104.infinityfree.com`), the full database name, the username, and the password.
